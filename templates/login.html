@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Inventory Portal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0 fw-bold">Portal Login</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="staff_id" class="form-label">Staff ID</label>
+                        <input type="text" class="form-control" id="staff_id" name="staff_id" required placeholder="e.g. s001, ib001, ob001">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="Enter password">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Sign In</button>
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-3">
+                <small class="text-muted fw-bold">Test Credentials:</small><br>
+                <small class="text-muted">Supervisor: <code class="text-danger">s001</code> / <code>john123</code></small><br>
+                <small class="text-muted">Inbound: <code class="text-danger">ib001</code> (razin123) | <code class="text-danger">ib002</code> (jack123)</small><br>
+                <small class="text-muted">Outbound: <code class="text-danger">ob001</code> (jeff123) | <code class="text-danger">ob002</code> (hazrul123)</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Inbound Portal - Warehouse System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h3 class="fw-bold">📦 Inbound Receiving Operations</h3>
+        <div>
+            <button class="btn btn-outline-primary me-2 active" id="btn-existing-mode" onclick="switchMode('existing')">
+                Existing SKU
+            </button>
+            <button class="btn btn-success fw-bold" id="btn-new-item-mode" onclick="switchMode('new')">
+                ➕ New Item(s)
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="section-existing" class="row">
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white fw-bold">
+                📥 Receive Stock for Existing SKU
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('submit_inbound_existing') }}">
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label">Select SKU / Product</label>
+                        <select class="form-select" id="product_id" name="product_id" required onchange="fetchProductHistory()">
+                            <option value="" selected disabled>-- Choose Product --</option>
+                            {% for p in products %}
+                                <option value="{{ p.id }}">{{ p.sku }} - {{ p.name }} (Stock: {{ p.current_stock }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity Received</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required placeholder="e.g. 50">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Submit Inbound Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                <span>📜 SKU Inbound History</span>
+                <span id="history-sku-badge" class="badge bg-light text-dark">Select a product to view history</span>
+            </div>
+            <div class="card-body p-0" style="max-height: 420px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Qty</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                Select an existing SKU from the dropdown to see all previous additions made by team members.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="section-new-item" class="row d-none">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white fw-bold d-flex justify-content-between align-items-center">
+                <span>✨ Register New Product Batch (Auto-Generated SKUs)</span>
+                <button type="button" class="btn btn-sm btn-light fw-bold" onclick="addNewRow()">➕ Add Another Item</button>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('submit_inbound_new_batch') }}">
+                    <p class="text-muted small">Enter product names and quantities for items without existing SKUs. Unique SKUs will be automatically assigned upon submission.</p>
+
+                    <div id="new-items-container">
+                        <div class="row g-3 align-items-center mb-3 item-row">
+                            <div class="col-md-7">
+                                <label class="form-label small fw-bold">Product Name</label>
+                                <input type="text" class="form-control" name="new_item_name[]" required placeholder="e.g. Ergonomic Office Chair">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Quantity</label>
+                                <input type="number" class="form-control" name="new_item_qty[]" min="1" required placeholder="e.g. 25">
+                            </div>
+                            <div class="col-md-1 text-center">
+                                <label class="form-label d-block small fw-bold">&nbsp;</label>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)">❌</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary" onclick="switchMode('existing')">Cancel</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4">Submit All New Items</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchMode(mode) {
+    const secExisting = document.getElementById('section-existing');
+    const secNew = document.getElementById('section-new-item');
+    const btnExisting = document.getElementById('btn-existing-mode');
+    const btnNew = document.getElementById('btn-new-item-mode');
+
+    if (mode === 'new') {
+        secExisting.classList.add('d-none');
+        secNew.classList.remove('d-none');
+        btnExisting.classList.remove('active');
+        btnNew.classList.add('active');
+    } else {
+        secNew.classList.add('d-none');
+        secExisting.classList.remove('d-none');
+        btnNew.classList.remove('active');
+        btnExisting.classList.add('active');
+    }
+}
+
+function fetchProductHistory() {
+    const productId = document.getElementById('product_id').value;
+    const badge = document.getElementById('history-sku-badge');
+    const tbody = document.getElementById('history-table-body');
+
+    if (!productId) return;
+
+    fetch(`/api/product-history/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            badge.textContent = `${data.sku} - ${data.name} (Current Stock: ${data.current_stock})`;
+            
+            if (data.history.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">No inbound history found for this product.</td>
+                    </tr>`;
+                return;
+            }
+
+            let rows = '';
+            data.history.forEach(item => {
+                let badgeClass = 'bg-warning text-dark';
+                if (item.status === 'APPROVED') badgeClass = 'bg-success';
+                if (item.status === 'REJECTED') badgeClass = 'bg-danger';
+
+                rows += `
+                    <tr>
+                        <td><code>${item.staff_id}</code></td>
+                        <td><strong>${item.staff_name}</strong></td>
+                        <td>+${item.quantity}</td>
+                        <td><small>${item.date_time}</small></td>
+                        <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                    </tr>`;
+            });
+            tbody.innerHTML = rows;
+        })
+        .catch(err => {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">Failed to load history.</td></tr>`;
+        });
+}
+
+function addNewRow() {
+    const container = document.getElementById('new-items-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'row g-3 align-items-center mb-3 item-row';
+    newRow.innerHTML = `
+        <div class="col-md-7">
+            <input type="text" class="form-control" name="new_item_name[]" required placeholder="Product Name">
+        </div>
+        <div class="col-md-4">
+            <input type="number" class="form-control" name="new_item_qty[]" min="1" required placeholder="Quantity">
+        </div>
+        <div class="col-md-1 text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)">❌</button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeRow(btn) {
+    const rows = document.querySelectorAll('.item-row');
+    if (rows.length > 1) {
+        btn.closest('.item-row').remove();
+    }
+}
+</script>
+{% endblock %}

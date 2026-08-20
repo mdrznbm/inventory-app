@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: inventory-app
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./instance:/app/instance
+    environment:
+      - SECRET_KEY=prod-super-secret-key-9988
+      - FLASK_ENV=production
+    restart: unless-stopped

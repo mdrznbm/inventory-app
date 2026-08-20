@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Outbound Portal - Warehouse System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 class="fw-bold">📤 Outbound Dispatch Operations</h3>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-5 mb-4 mb-md-0">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white fw-bold">
+                📤 Request Stock Withdrawal
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('submit_outbound') }}">
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label">Select SKU / Product</label>
+                        <select class="form-select" id="product_id" name="product_id" required onchange="fetchCombinedProductHistory()">
+                            <option value="" selected disabled>-- Choose Product --</option>
+                            {% for p in products %}
+                                <option value="{{ p.id }}">{{ p.sku }} - {{ p.name }} (Available: {{ p.current_stock }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity to Withdraw</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required placeholder="e.g. 10">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Submit Outbound Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                <span>🔍 SKU Movement History (IB & OB Audit)</span>
+                <span id="history-sku-badge" class="badge bg-light text-dark">Select a product to view log</span>
+            </div>
+            <div class="card-body p-0" style="max-height: 420px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Type</th>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Qty</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                Select an SKU from the dropdown to view the full audit trail of additions (IB) and withdrawals (OB).
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-secondary text-white fw-bold">
+        📋 My Request History
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Req #</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Submitted Date & Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in user_transactions %}
+                <tr>
+                    <td><code>#{{ txn.id }}</code></td>
+                    <td><strong>{{ txn.product.name }}</strong> ({{ txn.product.sku }})</td>
+                    <td>-{{ txn.quantity }}</td>
+                    <td><small>{{ txn.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small></td>
+                    <td>
+                        {% if txn.status == 'APPROVED' %}
+                            <span class="badge bg-success">APPROVED</span>
+                        {% elif txn.status == 'REJECTED' %}
+                            <span class="badge bg-danger" data-bs-toggle="tooltip" title="{{ txn.rejection_reason }}">REJECTED</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">PENDING</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">You have not submitted any outbound requests yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function fetchCombinedProductHistory() {
+    const productId = document.getElementById('product_id').value;
+    const badge = document.getElementById('history-sku-badge');
+    const tbody = document.getElementById('history-table-body');
+
+    if (!productId) return;
+
+    fetch(`/api/product-full-history/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            badge.textContent = `${data.sku} - ${data.name} (Stock: ${data.current_stock})`;
+            
+            if (data.history.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">No movement history found for this product.</td>
+                    </tr>`;
+                return;
+            }
+
+            let rows = '';
+            data.history.forEach(item => {
+                let statusBadge = 'bg-warning text-dark';
+                if (item.status === 'APPROVED') statusBadge = 'bg-success';
+                if (item.status === 'REJECTED') statusBadge = 'bg-danger';
+
+                let typeBadge = item.txn_type === 'INBOUND' 
+                    ? '<span class="badge bg-success">INBOUND</span>' 
+                    : '<span class="badge bg-primary">OUTBOUND</span>';
+
+                let qtyDisplay = item.txn_type === 'INBOUND' ? `+${item.quantity}` : `-${item.quantity}`;
+
+                rows += `
+                    <tr>
+                        <td>${typeBadge}</td>
+                        <td><code>${item.staff_id}</code></td>
+                        <td><strong>${item.staff_name}</strong></td>
+                        <td>${qtyDisplay}</td>
+                        <td><small>${item.date_time}</small></td>
+                        <td><span class="badge ${statusBadge}">${item.status}</span></td>
+                    </tr>`;
+            });
+            tbody.innerHTML = rows;
+        })
+        .catch(err => {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">Failed to load history.</td></tr>`;
+        });
+}
+</script>
+{% endblock %}
