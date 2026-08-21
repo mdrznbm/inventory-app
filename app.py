@@ -235,7 +235,10 @@ def product_full_history_api(product_id):
             'staff_name': t.requester.name,
             'quantity': t.quantity,
             'status': t.status,
-            'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else None,
+            'requested_at': t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else None,
+            'approved_at': t.approved_at.strftime('%Y-%m-%d %H:%M:%S') if t.approved_at else None,
+            'rejection_reason': t.rejection_reason
         })
 
     return jsonify({
@@ -548,6 +551,7 @@ def approve_transaction(txn_id):
                 return redirect(url_for('supervisor_dashboard'))
 
         txn.status = 'APPROVED'
+        txn.approved_at = datetime.utcnow()
         db.session.commit()
         flash(f'Transaction #{txn.id} approved! Inventory updated.', 'success')
 

@@ -38,6 +38,7 @@ class Transaction(db.Model):
     status = db.Column(db.String(10), default='PENDING', nullable=False)
     rejection_reason = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    approved_at = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     def __repr__(self):

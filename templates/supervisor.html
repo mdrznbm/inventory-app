@@ -242,9 +242,10 @@
 <div class="card shadow-sm border-0">
     <div class="card-header bg-dark text-white fw-bold">
         📊 Live Stock Overview
+        <span class="float-end fw-normal small text-white-50">Click a row to view full history</span>
     </div>
     <div class="card-body p-0">
-        <table class="table table-striped mb-0">
+        <table class="table table-striped table-hover mb-0">
             <thead>
                 <tr>
                     <th>SKU</th>
@@ -256,7 +257,7 @@
             </thead>
             <tbody>
                 {% for prod in products %}
-                <tr>
+                <tr style="cursor: pointer;" onclick="showProductHistory({{ prod.id }}, '{{ prod.name }} ({{ prod.sku }})')">
                     <td><code>{{ prod.sku }}</code></td>
                     <td>{{ prod.name }}</td>
                     <td><strong>{{ prod.current_stock }}</strong></td>
@@ -272,6 +273,40 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<div class="modal fade" id="productHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="productHistoryModalTitle">Product History</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Type</th>
+                            <th>Staff ID</th>
+                            <th>Employee</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>Requested At</th>
+                            <th>Approved At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productHistoryBody">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -299,6 +334,51 @@ function updatePasswordPreview() {
     } else {
         pwdDisplay.value = '[firstname]123';
     }
+}
+
+function showProductHistory(productId, productLabel) {
+    const modalEl = document.getElementById('productHistoryModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const titleEl = document.getElementById('productHistoryModalTitle');
+    const bodyEl = document.getElementById('productHistoryBody');
+
+    titleEl.textContent = 'History: ' + productLabel;
+    bodyEl.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading...</td></tr>';
+    modal.show();
+
+    fetch(`/api/product-full-history/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.history || data.history.length === 0) {
+                bodyEl.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No transaction history for this product yet.</td></tr>';
+                return;
+            }
+
+            bodyEl.innerHTML = '';
+            data.history.forEach(txn => {
+                const typeClass = txn.txn_type === 'INBOUND' ? 'bg-success' : 'bg-primary';
+                let statusClass = 'bg-warning text-dark';
+                if (txn.status === 'APPROVED') statusClass = 'bg-success';
+                if (txn.status === 'REJECTED') statusClass = 'bg-danger';
+
+                const approvedDisplay = txn.approved_at ? txn.approved_at : (txn.status === 'REJECTED' ? 'Rejected' : 'Pending');
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="badge ${typeClass}">${txn.txn_type}</span></td>
+                    <td><code>${txn.staff_id}</code></td>
+                    <td>${txn.staff_name}</td>
+                    <td>${txn.quantity}</td>
+                    <td><span class="badge ${statusClass}">${txn.status}</span></td>
+                    <td>${txn.requested_at || 'N/A'}</td>
+                    <td>${approvedDisplay}</td>
+                `;
+                bodyEl.appendChild(row);
+            });
+        })
+        .catch(() => {
+            bodyEl.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load history.</td></tr>';
+        });
 }
 
 // Initialise Staff ID preview on load

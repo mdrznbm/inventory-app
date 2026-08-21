@@ -21,8 +21,8 @@ Usage:
 from app import app
 from models import db, User, Transaction
 
-STAFF_IDS_TO_REMOVE = ['ib002', 'ob002', 'ob003']
-STAFF_IDS_TO_KEEP = ['s001', 'ib001', 'ob001']
+STAFF_IDS_TO_REMOVE = ['ib002', 'ob002', 'ob003', 'ib001', 'ob001']
+STAFF_IDS_TO_KEEP = ['s001']
 
 with app.app_context():
     users_to_remove = User.query.filter(User.staff_id.in_(STAFF_IDS_TO_REMOVE)).all()
