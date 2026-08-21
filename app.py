@@ -186,7 +186,7 @@ def product_full_history_api(product_id):
         return jsonify({'error': 'Unauthorized'}), 403
 
     product = Product.query.get_or_404(product_id)
-    
+
     txns = Transaction.query.filter_by(product_id=product.id)\
         .order_by(Transaction.created_at.desc()).all()
 
@@ -269,9 +269,9 @@ def submit_inbound_new_batch():
         item_name = name.strip()
         if item_name and qty_str.isdigit() and int(qty_str) > 0:
             qty = int(qty_str)
-            
+
             new_sku = generate_next_sku()
-            
+
             new_product = Product(
                 sku=new_sku,
                 name=item_name,
@@ -401,12 +401,15 @@ def add_employee():
         flash('Unauthorized.', 'danger')
         return redirect(url_for('index'))
 
-    name = request.form.get('name', '').strip()
+    first_name = request.form.get('first_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
     role = request.form.get('role')
 
-    if not name:
-        flash('Employee name is required.', 'warning')
+    if not first_name or not last_name:
+        flash('First and last name are required.', 'warning')
         return redirect(url_for('supervisor_dashboard'))
+
+    name = f"{first_name.capitalize()} {last_name.capitalize()}"
 
     inbound_count = User.query.filter_by(role='inbound_emp', is_account_active=True).count()
     outbound_count = User.query.filter_by(role='outbound_emp', is_account_active=True).count()
@@ -419,8 +422,7 @@ def add_employee():
     prefix = 'ib' if role == 'inbound_emp' else 'ob'
     new_staff_id = get_next_available_id_by_prefix(prefix)
 
-    first_name = name.split()[0].lower()
-    auto_password = f"{first_name}123"
+    auto_password = f"{first_name.lower()}123"
 
     existing_user = User.query.filter_by(staff_id=new_staff_id).first()
     if existing_user:
@@ -474,7 +476,7 @@ def approve_transaction(txn_id):
     txn = Transaction.query.get_or_404(txn_id)
     if txn.status == 'PENDING':
         product = Product.query.get(txn.product_id)
-        
+
         if txn.txn_type == 'INBOUND':
             product.current_stock += txn.quantity
         elif txn.txn_type == 'OUTBOUND':

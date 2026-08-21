@@ -43,7 +43,7 @@
                     <td>{{ txn.product.current_stock }}</td>
                     <td class="text-end">
                         <a href="{{ url_for('approve_transaction', txn_id=txn.id) }}" class="btn btn-sm btn-success me-1">Approve</a>
-                        
+
                         <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ txn.id }}">
                             Reject
                         </button>
@@ -95,7 +95,7 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('add_employee') }}">
-                    
+
                     <div class="mb-3">
                         <label for="role" class="form-label">Department / Role</label>
                         {% if forced_role == 'inbound_emp' %}
@@ -122,9 +122,15 @@
                         <input type="text" class="form-control bg-light text-muted fw-bold" id="staff_id_display" value="" readonly>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Employee Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required placeholder="e.g. Shah" oninput="updatePasswordPreview()">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required placeholder="e.g. Shah" oninput="updatePasswordPreview()">
+                        </div>
+                        <div class="col-6">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required placeholder="e.g. Rahman">
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -240,7 +246,7 @@ const nextObId = "{{ next_ob_id }}";
 function updateFormPreview() {
     const roleSelect = document.getElementById('role');
     const staffIdDisplay = document.getElementById('staff_id_display');
-    
+
     if (roleSelect.value === 'inbound_emp') {
         staffIdDisplay.value = nextIbId;
     } else {
@@ -249,12 +255,11 @@ function updateFormPreview() {
 }
 
 function updatePasswordPreview() {
-    const nameInput = document.getElementById('name').value.trim();
+    const firstNameInput = document.getElementById('first_name').value.trim();
     const pwdDisplay = document.getElementById('password_display');
-    
-    if (nameInput.length > 0) {
-        const firstName = nameInput.split(' ')[0].toLowerCase();
-        pwdDisplay.value = firstName + '123';
+
+    if (firstNameInput.length > 0) {
+        pwdDisplay.value = firstNameInput.toLowerCase() + '123';
     } else {
         pwdDisplay.value = '[firstname]123';
     }
