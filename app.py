@@ -114,6 +114,27 @@ def generate_next_sku():
     return f"SKU-{max_num + 1}"
 
 
+def is_using_default_password(user):
+    """
+    Checks whether a user's current password still matches the
+    auto-generated default (first_name + '123') assigned at account
+    creation. Works without a dedicated DB column by recomputing the
+    expected default from the user's stored name and comparing hashes.
+    """
+    if not user or not user.name:
+        return False
+    first_name = user.name.split()[0].lower()
+    expected_default = f"{first_name}123"
+    return check_password_hash(user.password_hash, expected_default)
+
+
+@app.context_processor
+def inject_password_reminder():
+    if current_user.is_authenticated:
+        return dict(show_password_reminder=is_using_default_password(current_user))
+    return dict(show_password_reminder=False)
+
+
 # --- ROUTING LOGIC ---
 
 @app.route('/')
@@ -136,16 +157,32 @@ def login():
         staff_id = request.form.get('staff_id', '').strip().lower()
         password = request.form.get('password')
 
-        user = User.query.filter_by(staff_id=staff_id, is_account_active=True).first()
+        user = User.query.filter_by(staff_id=staff_id).first()
 
-        if user and check_password_hash(user.password_hash, password):
+        if not user or not user.is_account_active:
+            flash('Invalid Staff ID or account deactivated.', 'danger')
+        elif user.is_locked:
+            flash('This account is locked after 3 failed login attempts. Please contact your supervisor for a password reset.', 'danger')
+        elif check_password_hash(user.password_hash, password):
+            user.failed_login_attempts = 0
+            db.session.commit()
             login_user(user)
             flash(f'Logged in as {user.name} ({user.staff_id.upper()})', 'success')
             return redirect(url_for('index'))
         else:
-            flash('Invalid Staff ID or account deactivated.', 'danger')
+            user.failed_login_attempts += 1
+            if user.failed_login_attempts >= 3:
+                user.is_locked = True
+                user.lock_requested_at = datetime.utcnow()
+                db.session.commit()
+                flash('Account locked after 3 failed login attempts. A password reset request has been sent to your supervisor.', 'danger')
+            else:
+                db.session.commit()
+                remaining = 3 - user.failed_login_attempts
+                attempt_word = 'attempt' if remaining == 1 else 'attempts'
+                flash(f'Invalid Staff ID or password. {remaining} {attempt_word} remaining before lockout.', 'danger')
 
-    active_users = User.query.filter_by(is_account_active=True).order_by(User.role, User.staff_id).all()
+    active_users = User.query.filter_by(is_account_active=True, is_locked=False).order_by(User.role, User.staff_id).all()
 
     return render_template('login.html', active_users=active_users)
 
@@ -368,6 +405,7 @@ def supervisor_dashboard():
     pending_txns = Transaction.query.filter_by(status='PENDING').order_by(Transaction.created_at.asc()).all()
     products = Product.query.all()
     employees = User.query.order_by(User.staff_id.asc()).all()
+    locked_users = User.query.filter_by(is_locked=True).order_by(User.lock_requested_at.asc()).all()
 
     inbound_count = User.query.filter_by(role='inbound_emp', is_account_active=True).count()
     outbound_count = User.query.filter_by(role='outbound_emp', is_account_active=True).count()
@@ -386,6 +424,7 @@ def supervisor_dashboard():
         pending_txns=pending_txns,
         products=products,
         employees=employees,
+        locked_users=locked_users,
         inbound_count=inbound_count,
         outbound_count=outbound_count,
         forced_role=forced_role,
@@ -466,6 +505,28 @@ def toggle_employee_status(user_id):
     return redirect(url_for('supervisor_dashboard'))
 
 
+@app.route('/supervisor/reset-password/<int:user_id>')
+@login_required
+def reset_employee_password(user_id):
+    if current_user.role != 'supervisor':
+        flash('Unauthorized.', 'danger')
+        return redirect(url_for('index'))
+
+    user = User.query.get_or_404(user_id)
+
+    first_name = user.name.split()[0].lower()
+    default_password = f"{first_name}123"
+
+    user.password_hash = generate_password_hash(default_password)
+    user.is_locked = False
+    user.failed_login_attempts = 0
+    user.lock_requested_at = None
+    db.session.commit()
+
+    flash(f'Password for {user.name} ({user.staff_id}) has been reset to the default password ({default_password}).', 'success')
+    return redirect(url_for('supervisor_dashboard'))
+
+
 @app.route('/supervisor/approve/<int:txn_id>')
 @login_required
 def approve_transaction(txn_id):
@@ -509,6 +570,39 @@ def reject_transaction(txn_id):
         flash(f'Transaction #{txn.id} was rejected.', 'info')
 
     return redirect(url_for('supervisor_dashboard'))
+
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form.get('old_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if not check_password_hash(current_user.password_hash, old_password):
+            flash('Current password is incorrect.', 'danger')
+            return redirect(url_for('change_password'))
+
+        if not new_password or not confirm_password:
+            flash('Please fill in both new password fields.', 'warning')
+            return redirect(url_for('change_password'))
+
+        if new_password != confirm_password:
+            flash('New password and confirmation do not match.', 'warning')
+            return redirect(url_for('change_password'))
+
+        if new_password == old_password:
+            flash('New password must be different from your current password.', 'warning')
+            return redirect(url_for('change_password'))
+
+        current_user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+
+        flash('Password updated successfully!', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('change_password.html')
 
 
 @app.route('/logout')

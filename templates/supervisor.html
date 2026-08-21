@@ -84,6 +84,42 @@
     </div>
 </div>
 
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-danger text-white fw-bold">
+        🔒 Password Reset Requests ({{ locked_users|length }})
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Staff ID</th>
+                    <th>Name</th>
+                    <th>Date &amp; Time of Lockout</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for locked_user in locked_users %}
+                <tr>
+                    <td><code>{{ locked_user.staff_id }}</code></td>
+                    <td><strong>{{ locked_user.name }}</strong></td>
+                    <td>{{ locked_user.lock_requested_at.strftime('%Y-%m-%d %H:%M:%S') if locked_user.lock_requested_at else 'N/A' }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('reset_employee_password', user_id=locked_user.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Reset password for {{ locked_user.name }} ({{ locked_user.staff_id }}) back to the default password?');">
+                            Reset Password
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No password reset requests at the moment.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <div class="row mb-4">
     <div class="col-md-5 mb-3 mb-md-0">
         <div class="card shadow-sm border-0">
