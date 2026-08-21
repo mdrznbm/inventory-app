@@ -123,7 +123,7 @@
 <div class="row mb-4">
     <div class="col-md-5 mb-3 mb-md-0">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-middle">
+            <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-middle register-employee-header">
                 <span>👤 Register New Employee</span>
                 <span class="badge bg-light text-dark">
                     Inbound: {{ inbound_count }} | Outbound: {{ outbound_count }}
@@ -155,7 +155,7 @@
 
                     <div class="mb-3">
                         <label for="staff_id_display" class="form-label">Staff ID (Auto-Assigned)</label>
-                        <input type="text" class="form-control bg-light text-muted fw-bold" id="staff_id_display" value="" readonly>
+                        <input type="text" class="form-control bg-body-secondary text-muted fw-bold" id="staff_id_display" value="" readonly>
                     </div>
 
                     <div class="row mb-3">
@@ -171,45 +171,81 @@
 
                     <div class="mb-3">
                         <label for="password_display" class="form-label">Initial Password (Auto-Generated)</label>
-                        <input type="text" class="form-control bg-light text-muted fw-bold" id="password_display" value="[firstname]123" readonly>
+                        <input type="text" class="form-control bg-body-secondary text-muted fw-bold" id="password_display" value="[firstname]123" readonly>
                     </div>
 
-                    <button type="submit" class="btn btn-info text-white w-100 fw-bold">Create Account</button>
+                    <button type="submit" class="btn btn-info text-white w-100 fw-bold register-employee-btn">Create Account</button>
                 </form>
             </div>
         </div>
     </div>
 
     <div class="col-md-7">
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 mb-3">
             <div class="card-header bg-secondary text-white fw-bold">
-                👥 Staff Directory
+                🛡️ Supervisor
             </div>
             <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 staff-table">
+                    <colgroup>
+                        <col style="width: 15%;">
+                        <col style="width: 30%;">
+                        <col style="width: 20%;">
+                        <col style="width: 35%;">
+                    </colgroup>
                     <thead class="table-light">
                         <tr>
                             <th>Staff ID</th>
                             <th>Name</th>
-                            <th>Department</th>
                             <th>Status</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for emp in employees %}
+                        {% for emp in employees if emp.role == 'supervisor' %}
                         <tr>
                             <td><code>{{ emp.staff_id }}</code></td>
                             <td><strong>{{ emp.name }}</strong></td>
                             <td>
-                                {% if emp.role == 'inbound_emp' %}
-                                    <span class="badge bg-success">Inbound</span>
-                                {% elif emp.role == 'outbound_emp' %}
-                                    <span class="badge bg-primary">Outbound</span>
+                                {% if emp.is_account_active %}
+                                    <span class="badge bg-success">Active</span>
                                 {% else %}
-                                    <span class="badge bg-dark">Supervisor</span>
+                                    <span class="badge bg-secondary">Deactivated</span>
                                 {% endif %}
                             </td>
+                            <td class="text-end"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-header bg-success text-white fw-bold">
+                📥 Inbound Department
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0 staff-table">
+                    <colgroup>
+                        <col style="width: 15%;">
+                        <col style="width: 30%;">
+                        <col style="width: 20%;">
+                        <col style="width: 35%;">
+                    </colgroup>
+                    <thead class="table-light">
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in employees if emp.role == 'inbound_emp' %}
+                        <tr>
+                            <td><code>{{ emp.staff_id }}</code></td>
+                            <td><strong>{{ emp.name }}</strong></td>
                             <td>
                                 {% if emp.is_account_active %}
                                     <span class="badge bg-success">Active</span>
@@ -218,18 +254,74 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                {% if emp.role != 'supervisor' %}
-                                    {% if emp.is_account_active %}
-                                    <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
-                                        Deactivate
-                                    </a>
-                                    {% else %}
-                                    <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
-                                        Reactivate
-                                    </a>
-                                    {% endif %}
+                                {% if emp.is_account_active %}
+                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
+                                    Deactivate
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
+                                    Reactivate
+                                </a>
                                 {% endif %}
                             </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">No inbound staff yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white fw-bold">
+                📤 Outbound Department
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0 staff-table">
+                    <colgroup>
+                        <col style="width: 15%;">
+                        <col style="width: 30%;">
+                        <col style="width: 20%;">
+                        <col style="width: 35%;">
+                    </colgroup>
+                    <thead class="table-light">
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in employees if emp.role == 'outbound_emp' %}
+                        <tr>
+                            <td><code>{{ emp.staff_id }}</code></td>
+                            <td><strong>{{ emp.name }}</strong></td>
+                            <td>
+                                {% if emp.is_account_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Deactivated</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if emp.is_account_active %}
+                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
+                                    Deactivate
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
+                                    Reactivate
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">No outbound staff yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

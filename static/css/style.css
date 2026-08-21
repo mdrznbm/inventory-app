@@ -1,0 +1,60 @@
+/* Dark mode refinements — Bootstrap's default dark theme is quite flat
+   for cards with shadow-sm/border-0 and forced-light table headers.
+   These overrides only apply when data-bs-theme="dark" is active. */
+
+[data-bs-theme="dark"] .card {
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+}
+
+[data-bs-theme="dark"] .card.shadow-sm {
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Neutralize forced-light table headers (table-light) so they don't
+   stand out as bright bands against dark cards */
+[data-bs-theme="dark"] .table-light {
+    --bs-table-bg: var(--bs-tertiary-bg);
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-border-color: var(--bs-border-color);
+}
+
+/* Slightly brighten muted text for better readability on dark backgrounds */
+[data-bs-theme="dark"] .text-muted {
+    color: var(--bs-secondary-color) !important;
+    opacity: 0.85;
+}
+
+/* Login page: force test-credentials text to plain white in dark mode
+   only (light mode keeps its original muted grey / colored code styling) */
+[data-bs-theme="dark"] #testCredentialsFooter,
+[data-bs-theme="dark"] #testCredentialsFooter small,
+[data-bs-theme="dark"] #testCredentialsFooter code {
+    color: #ffffff !important;
+}
+
+/* Supervisor dashboard: deepen the "Register New Employee" header blue
+   in dark mode only (light mode keeps the original bg-info cyan) */
+[data-bs-theme="dark"] .register-employee-header {
+    background-color: #0b7285 !important;
+}
+
+/* Supervisor dashboard: deepen the "Create Account" button blue to match
+   the header, in dark mode only (light mode keeps the original btn-info cyan) */
+[data-bs-theme="dark"] .register-employee-btn {
+    background-color: #0b7285 !important;
+    border-color: #0b7285 !important;
+}
+
+[data-bs-theme="dark"] .register-employee-btn:hover {
+    background-color: #095c6c !important;
+    border-color: #095c6c !important;
+}
+
+/* Force identical column widths across the Supervisor/Inbound/Outbound
+   staff tables (each is a separate <table>, so without this they
+   auto-size independently based on their own content and don't
+   line up vertically with each other) */
+.staff-table {
+    table-layout: fixed;
+}

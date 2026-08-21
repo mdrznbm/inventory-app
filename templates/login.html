@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Login - Inventory Portal{% endblock %}
-
 {% block content %}
 <div class="row justify-content-center mt-4">
     <div class="col-md-5">
@@ -9,7 +7,6 @@
             <div class="card-header bg-primary text-white text-center py-3">
                 <h4 class="mb-0 fw-bold">Portal Login</h4>
             </div>
-
             <div class="card-body p-4">
                 <form method="POST" action="{{ url_for('login') }}">
                     <div class="mb-3">
@@ -21,7 +18,6 @@
                                required
                                placeholder="e.g. s001, ib001, ob001">
                     </div>
-
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password"
@@ -31,17 +27,14 @@
                                required
                                placeholder="Enter password">
                     </div>
-
                     <button type="submit"
                             class="btn btn-primary w-100 py-2 fw-bold">
                         Sign In
                     </button>
                 </form>
             </div>
-
-            <div class="card-footer bg-light text-center py-3">
+            <div class="card-footer bg-body-tertiary text-center py-3" id="testCredentialsFooter">
                 <small class="text-muted fw-bold">Active Test Credentials:</small><br>
-
                 {% for user in active_users %}
                     <small class="text-muted">
                         {% if user.role == 'supervisor' %}
@@ -53,7 +46,6 @@
                         {% else %}
                             {{ user.role }}:
                         {% endif %}
-
                         <code class="text-danger">{{ user.staff_id.upper() }}</code>
                         /
                         <code>{{ user.name.split()[0].lower() }}123</code>
