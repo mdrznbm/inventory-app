@@ -127,7 +127,6 @@ def index():
             return redirect(url_for('outbound_page'))
     return redirect(url_for('login'))
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -136,7 +135,7 @@ def login():
     if request.method == 'POST':
         staff_id = request.form.get('staff_id', '').strip().lower()
         password = request.form.get('password')
-        
+
         user = User.query.filter_by(staff_id=staff_id, is_account_active=True).first()
 
         if user and check_password_hash(user.password_hash, password):
@@ -146,8 +145,9 @@ def login():
         else:
             flash('Invalid Staff ID or account deactivated.', 'danger')
 
-    return render_template('login.html')
+    active_users = User.query.filter_by(is_account_active=True).order_by(User.role, User.staff_id).all()
 
+    return render_template('login.html', active_users=active_users)
 
 # --- API AUDIT TRAIL ENDPOINTS ---
 
