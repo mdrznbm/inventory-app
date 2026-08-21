@@ -421,6 +421,7 @@ def supervisor_dashboard():
 
     next_ib_id = get_next_available_id_by_prefix('ib')
     next_ob_id = get_next_available_id_by_prefix('ob')
+    next_s_id = get_next_available_id_by_prefix('s')
 
     return render_template(
         'supervisor.html',
@@ -432,7 +433,8 @@ def supervisor_dashboard():
         outbound_count=outbound_count,
         forced_role=forced_role,
         next_ib_id=next_ib_id,
-        next_ob_id=next_ob_id
+        next_ob_id=next_ob_id,
+        next_s_id=next_s_id
     )
 
 
@@ -453,15 +455,22 @@ def add_employee():
 
     name = f"{first_name.capitalize()} {last_name.capitalize()}"
 
-    inbound_count = User.query.filter_by(role='inbound_emp', is_account_active=True).count()
-    outbound_count = User.query.filter_by(role='outbound_emp', is_account_active=True).count()
+    if role != 'supervisor':
+        inbound_count = User.query.filter_by(role='inbound_emp', is_account_active=True).count()
+        outbound_count = User.query.filter_by(role='outbound_emp', is_account_active=True).count()
 
-    if inbound_count < outbound_count:
-        role = 'inbound_emp'
-    elif outbound_count < inbound_count:
-        role = 'outbound_emp'
+        if inbound_count < outbound_count:
+            role = 'inbound_emp'
+        elif outbound_count < inbound_count:
+            role = 'outbound_emp'
 
-    prefix = 'ib' if role == 'inbound_emp' else 'ob'
+    if role == 'supervisor':
+        prefix = 's'
+    elif role == 'inbound_emp':
+        prefix = 'ib'
+    else:
+        prefix = 'ob'
+
     new_staff_id = get_next_available_id_by_prefix(prefix)
 
     auto_password = f"{first_name.lower()}123"
@@ -496,8 +505,8 @@ def toggle_employee_status(user_id):
         return redirect(url_for('index'))
 
     user = User.query.get_or_404(user_id)
-    if user.role == 'supervisor':
-        flash('Cannot deactivate supervisor account.', 'danger')
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'danger')
         return redirect(url_for('supervisor_dashboard'))
 
     user.is_account_active = not user.is_account_active
@@ -505,6 +514,35 @@ def toggle_employee_status(user_id):
 
     status_str = "deactivated (Staff ID unassigned for recycling)" if not user.is_account_active else "reactivated"
     flash(f'Account for {user.name} ({user.staff_id}) has been {status_str}.', 'info')
+    return redirect(url_for('supervisor_dashboard'))
+
+
+@app.route('/supervisor/edit-employee/<int:user_id>', methods=['POST'])
+@login_required
+def edit_employee(user_id):
+    if current_user.role != 'supervisor':
+        flash('Unauthorized.', 'danger')
+        return redirect(url_for('index'))
+
+    user = User.query.get_or_404(user_id)
+
+    first_name = request.form.get('edit_first_name', '').strip()
+    last_name = request.form.get('edit_last_name', '').strip()
+
+    if not first_name:
+        flash('First name is required.', 'warning')
+        return redirect(url_for('supervisor_dashboard'))
+
+    old_name = user.name
+    if last_name:
+        new_name = f"{first_name.capitalize()} {last_name.capitalize()}"
+    else:
+        new_name = first_name.capitalize()
+
+    user.name = new_name
+    db.session.commit()
+
+    flash(f'Updated name for {user.staff_id}: "{old_name}" -> "{new_name}".', 'success')
     return redirect(url_for('supervisor_dashboard'))
 
 

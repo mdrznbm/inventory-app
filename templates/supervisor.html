@@ -137,17 +137,20 @@
                         {% if forced_role == 'inbound_emp' %}
                             <select class="form-select bg-warning-subtle fw-bold" id="role" name="role" onchange="updateFormPreview()">
                                 <option value="inbound_emp" selected>Inbound Department (Auto-Assigned - Lower Count)</option>
+                                <option value="supervisor">Supervisor</option>
                             </select>
-                            <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Inbound has fewer staff. Assigned to Inbound.</div>
+                            <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Inbound has fewer staff. Warehouse-floor hires are assigned to Inbound. Registering a Supervisor is always available.</div>
                         {% elif forced_role == 'outbound_emp' %}
                             <select class="form-select bg-warning-subtle fw-bold" id="role" name="role" onchange="updateFormPreview()">
                                 <option value="outbound_emp" selected>Outbound Department (Auto-Assigned - Lower Count)</option>
+                                <option value="supervisor">Supervisor</option>
                             </select>
-                            <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Outbound has fewer staff. Assigned to Outbound.</div>
+                            <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Outbound has fewer staff. Warehouse-floor hires are assigned to Outbound. Registering a Supervisor is always available.</div>
                         {% else %}
                             <select class="form-select" id="role" name="role" required onchange="updateFormPreview()">
                                 <option value="inbound_emp" selected>Inbound Department (Inbound)</option>
                                 <option value="outbound_emp">Outbound Department (Outbound)</option>
+                                <option value="supervisor">Supervisor</option>
                             </select>
                             <div class="form-text text-success fw-bold">⚖️ Equal Staffing: Supervisor can choose department.</div>
                         {% endif %}
@@ -213,7 +216,50 @@
                                     <span class="badge bg-secondary">Deactivated</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end"></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
+                                    Edit
+                                </button>
+                                {% if emp.id != current_user.id %}
+                                    {% if emp.is_account_active %}
+                                    <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})?');">
+                                        Deactivate
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
+                                        Reactivate
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+
+                                <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
+                                                <div class="modal-header bg-secondary text-white">
+                                                    <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    {% set name_parts = emp.name.split(' ', 1) %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label">First Name</label>
+                                                        <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Last Name</label>
+                                                        <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -254,6 +300,9 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
+                                    Edit
+                                </button>
                                 {% if emp.is_account_active %}
                                 <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
                                     Deactivate
@@ -263,6 +312,34 @@
                                     Reactivate
                                 </a>
                                 {% endif %}
+
+                                <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
+                                                <div class="modal-header bg-secondary text-white">
+                                                    <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    {% set name_parts = emp.name.split(' ', 1) %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label">First Name</label>
+                                                        <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Last Name</label>
+                                                        <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         {% else %}
@@ -308,6 +385,9 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
+                                    Edit
+                                </button>
                                 {% if emp.is_account_active %}
                                 <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
                                     Deactivate
@@ -317,6 +397,34 @@
                                     Reactivate
                                 </a>
                                 {% endif %}
+
+                                <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
+                                                <div class="modal-header bg-secondary text-white">
+                                                    <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    {% set name_parts = emp.name.split(' ', 1) %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label">First Name</label>
+                                                        <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Last Name</label>
+                                                        <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         {% else %}
@@ -405,6 +513,7 @@
 <script>
 const nextIbId = "{{ next_ib_id }}";
 const nextObId = "{{ next_ob_id }}";
+const nextSId = "{{ next_s_id }}";
 
 function updateFormPreview() {
     const roleSelect = document.getElementById('role');
@@ -412,8 +521,10 @@ function updateFormPreview() {
 
     if (roleSelect.value === 'inbound_emp') {
         staffIdDisplay.value = nextIbId;
-    } else {
+    } else if (roleSelect.value === 'outbound_emp') {
         staffIdDisplay.value = nextObId;
+    } else {
+        staffIdDisplay.value = nextSId;
     }
 }
 
