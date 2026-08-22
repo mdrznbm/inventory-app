@@ -110,6 +110,8 @@ To stop the app, go back to the terminal and press `Ctrl+C`.
 
 ## Part 5: Basic Git Commands You'll Need
 
+**Important:** `main` is protected — nobody, including the project owner, can push directly to it. The commands below are the building blocks of everyday Git use, but they only work as shown when you're working on your own branch, not on `main` directly. Part 6 (right after this) shows the full picture — read both parts together before making your first change.
+
 Once you start making changes, here's the everyday workflow:
 
 1. **Before you start working, get the latest version of the project:**
@@ -136,12 +138,15 @@ Once you start making changes, here's the everyday workflow:
    ```bash
    git push
    ```
+   On `main`, this step will be rejected — see Part 6 for how pushing actually works in this project.
 
 If `git push` ever fails and asks for a username/password, note that GitHub no longer accepts your account password directly — you'll need a **Personal Access Token** instead. Ask the team for help setting this up if you hit this.
 
 ---
 
 ## Part 6: Working on a Branch (Important!)
+
+This applies to **everyone on the team, including the project owner** — nobody pushes directly to `main`, no exceptions. `main` is protected on GitHub, so a direct push will simply be rejected regardless of who attempts it.
 
 To keep the main version of the project safe and working at all times, **please don't commit changes directly to `main`**. Instead, do your work on a separate "branch" — think of it as your own private copy of the project where you can experiment freely without affecting anyone else's work or breaking the live app.
 
