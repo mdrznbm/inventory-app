@@ -281,8 +281,10 @@ def inbound_page():
     products = Product.query.order_by(Product.sku.asc()).all()
     inbound_history = Transaction.query.filter_by(txn_type='INBOUND')\
         .order_by(Transaction.created_at.desc()).all()
+    user_transactions = Transaction.query.filter_by(user_id=current_user.id, txn_type='INBOUND')\
+        .order_by(Transaction.created_at.desc()).all()
 
-    return render_template('inbound.html', products=products, inbound_history=inbound_history)
+    return render_template('inbound.html', products=products, inbound_history=inbound_history, user_transactions=user_transactions)
 
 
 @app.route('/submit-inbound-existing', methods=['POST'])

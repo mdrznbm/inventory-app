@@ -119,6 +119,64 @@
     </div>
 </div>
 
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-secondary text-white fw-bold">
+        📋 My Request History
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Req #</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Submitted Date & Time</th>
+                    <th>Status</th>
+                    <th>Actioned By</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in user_transactions %}
+                <tr>
+                    <td><code>#{{ txn.id }}</code></td>
+                    <td><strong>{{ txn.product.name }}</strong> ({{ txn.product.sku }})</td>
+                    <td>+{{ txn.quantity }}</td>
+                    <td><small>{{ txn.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small></td>
+                    <td>
+                        {% if txn.status == 'APPROVED' %}
+                            <span class="badge bg-success">APPROVED</span>
+                        {% elif txn.status == 'REJECTED' %}
+                            <span class="badge bg-danger" data-bs-toggle="tooltip" title="{{ txn.rejection_reason }}">REJECTED</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">PENDING</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if txn.actioned_by %}
+                            {{ txn.actioned_by.name }} ({{ txn.actioned_by.staff_id }})
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if txn.status == 'REJECTED' and txn.rejection_reason %}
+                            {{ txn.rejection_reason }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-3">You have not submitted any inbound requests yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script>
 function switchMode(mode) {
     const secExisting = document.getElementById('section-existing');
