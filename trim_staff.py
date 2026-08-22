@@ -1,10 +1,8 @@
 """
 Trim the staff roster down to a lean startup team:
     s001 (john, supervisor)
-    ib001 (Razin, inbound)
-    ob001 (Jeff, outbound)
 
-Removes: ib002 (Jack), ob002 (Hazrul), ob003 (Alice Jackson)
+Removes: ib001 (Razin), ib002 (Jack), ob001 (Jeff), ob002 (Hazrul), ob003 (Alice Jackson)
 
 Safety: Transaction.user_id is a required (nullable=False) foreign
 key to users.id. This script first checks whether any of the
@@ -21,7 +19,7 @@ Usage:
 from app import app
 from models import db, User, Transaction
 
-STAFF_IDS_TO_REMOVE = ['ib002', 'ob002', 'ob003', 'ib001', 'ob001']
+STAFF_IDS_TO_REMOVE = ['s002', 'ib002', 'ob002', 'ob003', 'ib001', 'ob001']
 STAFF_IDS_TO_KEEP = ['s001']
 
 with app.app_context():
