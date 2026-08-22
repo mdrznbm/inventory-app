@@ -186,6 +186,25 @@ If you want to keep working on something else after this, switch back to `main` 
 
 ---
 
+## Part 7: Deploying Your Own Copy to Azure (Optional)
+
+The official version of this project is deployed on the repo owner's Azure account — that's the one used for the class presentation, and you don't need access to it.
+
+However, once Docker packaging is finished in this project, you're encouraged to deploy your **own independent copy** to your **own Azure account** (Azure for Students works well and comes with free credit). This gives you your own live, working link — genuinely useful for a resume or portfolio, since you'll have actually built and deployed it yourself.
+
+This is completely separate from the team's official deployment. Nothing you do here can affect the main project or anyone else's work.
+
+The rough idea, once the Docker side of this project is complete:
+1. Make sure you have your own copy of the project set up locally (Parts 1–4 above)
+2. Sign up for an Azure account if you don't already have one — Azure for Students is free with a school email
+3. Build the project's Docker image and push it to your own Azure Container Registry
+4. Deploy your own Azure App Service (Web App for Containers) pointing at your image
+5. You'll now have your own live URL, fully your own to show off
+
+Exact step-by-step commands will be added here once Docker packaging is complete in the project — check back, or ask in the team chat if you'd like to try this before then.
+
+---
+
 
 
 - **"command not found" errors** — usually means the tool (git/python) isn't installed correctly, or isn't added to your system PATH. Reinstall and make sure any "add to PATH" option is checked.
