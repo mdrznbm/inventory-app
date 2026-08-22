@@ -205,7 +205,25 @@ Exact step-by-step commands will be added here once Docker packaging is complete
 
 ---
 
+## Part 8: How We Use the Task Board
 
+We track project tasks using a GitHub Projects board (find it under the **Projects** tab on the repo). It has five columns, and it only works well if we all move cards the same way. Here's what each column actually means, and exactly when to move a card into it:
+
+| Column | Meaning | Move a card here when... |
+|---|---|---|
+| **Backlog** | Not started, nobody's claimed it | This is the default for any new task |
+| **Ready** | Claimed, but work hasn't started yet | You've assigned yourself to the card, but haven't actually begun |
+| **In progress** | Actively being worked on right now | You sit down and genuinely start working on it |
+| **In review** | The work is done and a Pull Request is open | The moment you push your branch and open a PR |
+| **Done** | Fully finished | The PR has been approved and merged into `main` |
+
+**A common mistake to avoid:** assigning yourself to a card and moving it straight to "In progress," even if you don't plan to start until later. Please only move it there once you're actually working on it — that way, everyone can trust the board reflects what's really happening, not just what's planned.
+
+**To assign yourself to a card:** click the card to open its details, find the **"Assignees"** field, and select your name. Anyone with access to the repo can assign a card to themselves or to anyone else — there's no special permission needed, so feel free to grab a task from Backlog whenever you're ready to start something new.
+
+---
+
+## Common Issues
 
 - **"command not found" errors** — usually means the tool (git/python) isn't installed correctly, or isn't added to your system PATH. Reinstall and make sure any "add to PATH" option is checked.
 - **`(venv)` isn't showing in your terminal** — you forgot to activate the virtual environment (see Part 4, step 2). Run the activation command again.
