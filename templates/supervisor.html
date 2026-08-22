@@ -484,6 +484,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0">
+                <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -493,15 +494,18 @@
                             <th>Qty</th>
                             <th>Status</th>
                             <th>Requested At</th>
-                            <th>Approved At</th>
+                            <th>Actioned At</th>
+                            <th>Actioned By</th>
+                            <th>Reason</th>
                         </tr>
                     </thead>
                     <tbody id="productHistoryBody">
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Loading...</td>
+                            <td colspan="9" class="text-center text-muted py-4">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -546,14 +550,14 @@ function showProductHistory(productId, productLabel) {
     const bodyEl = document.getElementById('productHistoryBody');
 
     titleEl.textContent = 'History: ' + productLabel;
-    bodyEl.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading...</td></tr>';
+    bodyEl.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Loading...</td></tr>';
     modal.show();
 
     fetch(`/api/product-full-history/${productId}`)
         .then(response => response.json())
         .then(data => {
             if (!data.history || data.history.length === 0) {
-                bodyEl.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No transaction history for this product yet.</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No transaction history for this product yet.</td></tr>';
                 return;
             }
 
@@ -564,7 +568,13 @@ function showProductHistory(productId, productLabel) {
                 if (txn.status === 'APPROVED') statusClass = 'bg-success';
                 if (txn.status === 'REJECTED') statusClass = 'bg-danger';
 
-                const approvedDisplay = txn.approved_at ? txn.approved_at : (txn.status === 'REJECTED' ? 'Rejected' : 'Pending');
+                const actionedAtDisplay = txn.actioned_at ? txn.actioned_at : 'Pending';
+                const actionedByDisplay = txn.actioned_by_name
+                    ? `${txn.actioned_by_name} (${txn.actioned_by_staff_id})`
+                    : (txn.status === 'PENDING' ? '-' : 'N/A');
+                const reasonDisplay = txn.status === 'REJECTED' && txn.rejection_reason
+                    ? txn.rejection_reason
+                    : '-';
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -574,13 +584,15 @@ function showProductHistory(productId, productLabel) {
                     <td>${txn.quantity}</td>
                     <td><span class="badge ${statusClass}">${txn.status}</span></td>
                     <td>${txn.requested_at || 'N/A'}</td>
-                    <td>${approvedDisplay}</td>
+                    <td>${actionedAtDisplay}</td>
+                    <td>${actionedByDisplay}</td>
+                    <td>${reasonDisplay}</td>
                 `;
                 bodyEl.appendChild(row);
             });
         })
         .catch(() => {
-            bodyEl.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load history.</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Failed to load history.</td></tr>';
         });
 }
 

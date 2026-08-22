@@ -200,12 +200,22 @@ def product_history_api(product_id):
 
     history_data = []
     for t in txns:
+        actioned_at = None
+        if t.approved_at:
+            actioned_at = t.approved_at.strftime('%Y-%m-%d %H:%M:%S')
+        elif t.rejected_at:
+            actioned_at = t.rejected_at.strftime('%Y-%m-%d %H:%M:%S')
+
         history_data.append({
             'staff_id': t.requester.staff_id.upper(),
             'staff_name': t.requester.name,
             'quantity': t.quantity,
             'status': t.status,
-            'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'actioned_at': actioned_at,
+            'actioned_by_staff_id': t.actioned_by.staff_id.upper() if t.actioned_by else None,
+            'actioned_by_name': t.actioned_by.name if t.actioned_by else None,
+            'rejection_reason': t.rejection_reason
         })
 
     return jsonify({
@@ -229,6 +239,12 @@ def product_full_history_api(product_id):
 
     history_data = []
     for t in txns:
+        actioned_at = None
+        if t.approved_at:
+            actioned_at = t.approved_at.strftime('%Y-%m-%d %H:%M:%S')
+        elif t.rejected_at:
+            actioned_at = t.rejected_at.strftime('%Y-%m-%d %H:%M:%S')
+
         history_data.append({
             'txn_type': t.txn_type,
             'staff_id': t.requester.staff_id.upper(),
@@ -238,6 +254,10 @@ def product_full_history_api(product_id):
             'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else None,
             'requested_at': t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else None,
             'approved_at': t.approved_at.strftime('%Y-%m-%d %H:%M:%S') if t.approved_at else None,
+            'rejected_at': t.rejected_at.strftime('%Y-%m-%d %H:%M:%S') if t.rejected_at else None,
+            'actioned_at': actioned_at,
+            'actioned_by_staff_id': t.actioned_by.staff_id.upper() if t.actioned_by else None,
+            'actioned_by_name': t.actioned_by.name if t.actioned_by else None,
             'rejection_reason': t.rejection_reason
         })
 
@@ -590,6 +610,7 @@ def approve_transaction(txn_id):
 
         txn.status = 'APPROVED'
         txn.approved_at = datetime.utcnow()
+        txn.actioned_by_user_id = current_user.id
         db.session.commit()
         flash(f'Transaction #{txn.id} approved! Inventory updated.', 'success')
 
@@ -608,6 +629,8 @@ def reject_transaction(txn_id):
         reason = request.form.get('rejection_reason')
         txn.status = 'REJECTED'
         txn.rejection_reason = reason
+        txn.rejected_at = datetime.utcnow()
+        txn.actioned_by_user_id = current_user.id
         db.session.commit()
         flash(f'Transaction #{txn.id} was rejected.', 'info')
 

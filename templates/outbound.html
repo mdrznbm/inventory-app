@@ -45,6 +45,7 @@
                 <span id="history-sku-badge" class="badge bg-light text-dark">Select a product to view log</span>
             </div>
             <div class="card-body p-0" style="max-height: 420px; overflow-y: auto;">
+                <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light sticky-top">
                         <tr>
@@ -54,16 +55,20 @@
                             <th>Qty</th>
                             <th>Date & Time</th>
                             <th>Status</th>
+                            <th>Actioned At</th>
+                            <th>Actioned By</th>
+                            <th>Reason</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
+                            <td colspan="9" class="text-center text-muted py-4">
                                 Select an SKU from the dropdown to view the full audit trail of additions (IB) and withdrawals (OB).
                             </td>
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>
@@ -82,6 +87,8 @@
                     <th>Quantity</th>
                     <th>Submitted Date & Time</th>
                     <th>Status</th>
+                    <th>Actioned By</th>
+                    <th>Reason</th>
                 </tr>
             </thead>
             <tbody>
@@ -100,10 +107,24 @@
                             <span class="badge bg-warning text-dark">PENDING</span>
                         {% endif %}
                     </td>
+                    <td>
+                        {% if txn.actioned_by %}
+                            {{ txn.actioned_by.name }} ({{ txn.actioned_by.staff_id }})
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if txn.status == 'REJECTED' and txn.rejection_reason %}
+                            {{ txn.rejection_reason }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-3">You have not submitted any outbound requests yet.</td>
+                    <td colspan="7" class="text-center text-muted py-3">You have not submitted any outbound requests yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -123,11 +144,11 @@ function fetchCombinedProductHistory() {
         .then(response => response.json())
         .then(data => {
             badge.textContent = `${data.sku} - ${data.name} (Stock: ${data.current_stock})`;
-            
+
             if (data.history.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-3">No movement history found for this product.</td>
+                        <td colspan="9" class="text-center text-muted py-3">No movement history found for this product.</td>
                     </tr>`;
                 return;
             }
@@ -138,11 +159,19 @@ function fetchCombinedProductHistory() {
                 if (item.status === 'APPROVED') statusBadge = 'bg-success';
                 if (item.status === 'REJECTED') statusBadge = 'bg-danger';
 
-                let typeBadge = item.txn_type === 'INBOUND' 
-                    ? '<span class="badge bg-success">INBOUND</span>' 
+                let typeBadge = item.txn_type === 'INBOUND'
+                    ? '<span class="badge bg-success">INBOUND</span>'
                     : '<span class="badge bg-primary">OUTBOUND</span>';
 
                 let qtyDisplay = item.txn_type === 'INBOUND' ? `+${item.quantity}` : `-${item.quantity}`;
+
+                const actionedAtDisplay = item.actioned_at ? item.actioned_at : 'Pending';
+                const actionedByDisplay = item.actioned_by_name
+                    ? `${item.actioned_by_name} (${item.actioned_by_staff_id})`
+                    : (item.status === 'PENDING' ? '-' : 'N/A');
+                const reasonDisplay = item.status === 'REJECTED' && item.rejection_reason
+                    ? item.rejection_reason
+                    : '-';
 
                 rows += `
                     <tr>
@@ -152,12 +181,15 @@ function fetchCombinedProductHistory() {
                         <td>${qtyDisplay}</td>
                         <td><small>${item.date_time}</small></td>
                         <td><span class="badge ${statusBadge}">${item.status}</span></td>
+                        <td><small>${actionedAtDisplay}</small></td>
+                        <td><small>${actionedByDisplay}</small></td>
+                        <td><small>${reasonDisplay}</small></td>
                     </tr>`;
             });
             tbody.innerHTML = rows;
         })
         .catch(err => {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">Failed to load history.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-3">Failed to load history.</td></tr>`;
         });
 }
 </script>

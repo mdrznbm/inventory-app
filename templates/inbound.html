@@ -53,6 +53,7 @@
                 <span id="history-sku-badge" class="badge bg-light text-dark">Select a product to view history</span>
             </div>
             <div class="card-body p-0" style="max-height: 420px; overflow-y: auto;">
+                <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light sticky-top">
                         <tr>
@@ -61,16 +62,20 @@
                             <th>Qty</th>
                             <th>Date & Time</th>
                             <th>Status</th>
+                            <th>Actioned At</th>
+                            <th>Actioned By</th>
+                            <th>Reason</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
+                            <td colspan="8" class="text-center text-muted py-4">
                                 Select an existing SKU from the dropdown to see all previous additions made by team members.
                             </td>
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>
@@ -145,11 +150,11 @@ function fetchProductHistory() {
         .then(response => response.json())
         .then(data => {
             badge.textContent = `${data.sku} - ${data.name} (Current Stock: ${data.current_stock})`;
-            
+
             if (data.history.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-3">No inbound history found for this product.</td>
+                        <td colspan="8" class="text-center text-muted py-3">No inbound history found for this product.</td>
                     </tr>`;
                 return;
             }
@@ -160,6 +165,14 @@ function fetchProductHistory() {
                 if (item.status === 'APPROVED') badgeClass = 'bg-success';
                 if (item.status === 'REJECTED') badgeClass = 'bg-danger';
 
+                const actionedAtDisplay = item.actioned_at ? item.actioned_at : 'Pending';
+                const actionedByDisplay = item.actioned_by_name
+                    ? `${item.actioned_by_name} (${item.actioned_by_staff_id})`
+                    : (item.status === 'PENDING' ? '-' : 'N/A');
+                const reasonDisplay = item.status === 'REJECTED' && item.rejection_reason
+                    ? item.rejection_reason
+                    : '-';
+
                 rows += `
                     <tr>
                         <td><code>${item.staff_id}</code></td>
@@ -167,12 +180,15 @@ function fetchProductHistory() {
                         <td>+${item.quantity}</td>
                         <td><small>${item.date_time}</small></td>
                         <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                        <td><small>${actionedAtDisplay}</small></td>
+                        <td><small>${actionedByDisplay}</small></td>
+                        <td><small>${reasonDisplay}</small></td>
                     </tr>`;
             });
             tbody.innerHTML = rows;
         })
         .catch(err => {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">Failed to load history.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Failed to load history.</td></tr>`;
         });
 }
 

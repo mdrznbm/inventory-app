@@ -58,3 +58,36 @@
 .staff-table {
     table-layout: fixed;
 }
+
+/* Replace harsh Bootstrap danger-red with the softer pink already used
+   by <code> elements (staff IDs), for better contrast/readability in
+   dark mode. Light mode is untouched. */
+[data-bs-theme="dark"] .text-danger {
+    color: #d63384 !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-danger {
+    color: #d63384 !important;
+    border-color: #d63384 !important;
+}
+[data-bs-theme="dark"] .btn-outline-danger:hover,
+[data-bs-theme="dark"] .btn-outline-danger:focus {
+    color: #fff !important;
+    background-color: #d63384 !important;
+    border-color: #d63384 !important;
+}
+
+[data-bs-theme="dark"] .btn-danger {
+    background-color: #d63384 !important;
+    border-color: #d63384 !important;
+    color: #fff !important;
+}
+[data-bs-theme="dark"] .btn-danger:hover,
+[data-bs-theme="dark"] .btn-danger:focus {
+    background-color: #b02a6f !important;
+    border-color: #a52568 !important;
+}
+
+[data-bs-theme="dark"] .bg-danger {
+    background-color: #d63384 !important;
+}

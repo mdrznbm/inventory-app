@@ -17,7 +17,7 @@ class User(UserMixin, db.Model):
     @property
     def is_active(self):
         return self.is_account_active
-    transactions = db.relationship('Transaction', backref='requester', lazy=True)
+    transactions = db.relationship('Transaction', foreign_keys='Transaction.user_id', backref='requester', lazy=True)
     def __repr__(self):
         return f"<User {self.staff_id} ({self.name}) - Role: {self.role}>"
 class Product(db.Model):
@@ -39,7 +39,10 @@ class Transaction(db.Model):
     rejection_reason = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     approved_at = db.Column(db.DateTime, nullable=True)
+    rejected_at = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    actioned_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    actioned_by = db.relationship('User', foreign_keys=[actioned_by_user_id])
     def __repr__(self):
         return f"<Transaction #{self.id} {self.txn_type} - {self.status}>"
