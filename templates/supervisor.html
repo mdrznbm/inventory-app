@@ -35,7 +35,7 @@
                             <span class="badge bg-primary">OUTBOUND</span>
                         {% endif %}
                     </td>
-                    <td>{{ txn.requester.name }} (<code>{{ txn.requester.staff_id }}</code>)</td>
+                    <td>{{ txn.requester_name_snapshot or txn.requester.name }} (<code>{{ txn.requester.staff_id }}</code>)</td>
                     <td><strong>{{ txn.product.name }}</strong> ({{ txn.product.sku }})</td>
                     <td>
                         {% if txn.txn_type == 'INBOUND' %}+{% else %}-{% endif %}{{ txn.quantity }}
@@ -57,7 +57,7 @@
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <p>Are you sure you want to reject this request from <strong>{{ txn.requester.name }}</strong>?</p>
+                                            <p>Are you sure you want to reject this request from <strong>{{ txn.requester_name_snapshot or txn.requester.name }}</strong>?</p>
                                             <div class="mb-3">
                                                 <label for="rejection_reason" class="form-label">Reason for Rejection</label>
                                                 <textarea class="form-control" name="rejection_reason" rows="3" required placeholder="e.g. Mismatched delivery count..."></textarea>
