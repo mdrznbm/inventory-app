@@ -110,6 +110,8 @@ To stop the app, go back to the terminal and press `Ctrl+C`.
 
 ## Part 5: Basic Git Commands You'll Need
 
+**Important:** `main` is protected — nobody, including the project owner, can push directly to it. The commands below are the building blocks of everyday Git use, but they only work as shown when you're working on your own branch, not on `main` directly. Part 6 (right after this) shows the full picture — read both parts together before making your first change.
+
 Once you start making changes, here's the everyday workflow:
 
 1. **Before you start working, get the latest version of the project:**
@@ -136,12 +138,15 @@ Once you start making changes, here's the everyday workflow:
    ```bash
    git push
    ```
+   On `main`, this step will be rejected — see Part 6 for how pushing actually works in this project.
 
 If `git push` ever fails and asks for a username/password, note that GitHub no longer accepts your account password directly — you'll need a **Personal Access Token** instead. Ask the team for help setting this up if you hit this.
 
 ---
 
 ## Part 6: Working on a Branch (Important!)
+
+This applies to **everyone on the team, including the project owner** — nobody pushes directly to `main`, no exceptions. `main` is protected on GitHub, so a direct push will simply be rejected regardless of who attempts it.
 
 To keep the main version of the project safe and working at all times, **please don't commit changes directly to `main`**. Instead, do your work on a separate "branch" — think of it as your own private copy of the project where you can experiment freely without affecting anyone else's work or breaking the live app.
 
@@ -181,7 +186,44 @@ If you want to keep working on something else after this, switch back to `main` 
 
 ---
 
+## Part 7: Deploying Your Own Copy to Azure (Optional)
 
+The official version of this project is deployed on the repo owner's Azure account — that's the one used for the class presentation, and you don't need access to it.
+
+However, once Docker packaging is finished in this project, you're encouraged to deploy your **own independent copy** to your **own Azure account** (Azure for Students works well and comes with free credit). This gives you your own live, working link — genuinely useful for a resume or portfolio, since you'll have actually built and deployed it yourself.
+
+This is completely separate from the team's official deployment. Nothing you do here can affect the main project or anyone else's work.
+
+The rough idea, once the Docker side of this project is complete:
+1. Make sure you have your own copy of the project set up locally (Parts 1–4 above)
+2. Sign up for an Azure account if you don't already have one — Azure for Students is free with a school email
+3. Build the project's Docker image and push it to your own Azure Container Registry
+4. Deploy your own Azure App Service (Web App for Containers) pointing at your image
+5. You'll now have your own live URL, fully your own to show off
+
+Exact step-by-step commands will be added here once Docker packaging is complete in the project — check back, or ask in the team chat if you'd like to try this before then.
+
+---
+
+## Part 8: How We Use the Task Board
+
+We track project tasks using a GitHub Projects board (find it under the **Projects** tab on the repo). It has five columns, and it only works well if we all move cards the same way. Here's what each column actually means, and exactly when to move a card into it:
+
+| Column | Meaning | Move a card here when... |
+|---|---|---|
+| **Backlog** | Not started, nobody's claimed it | This is the default for any new task |
+| **Ready** | Claimed, but work hasn't started yet | You've assigned yourself to the card, but haven't actually begun |
+| **In progress** | Actively being worked on right now | You sit down and genuinely start working on it |
+| **In review** | The work is done and a Pull Request is open | The moment you push your branch and open a PR |
+| **Done** | Fully finished | The PR has been approved and merged into `main` |
+
+**A common mistake to avoid:** assigning yourself to a card and moving it straight to "In progress," even if you don't plan to start until later. Please only move it there once you're actually working on it — that way, everyone can trust the board reflects what's really happening, not just what's planned.
+
+**To assign yourself to a card:** click the card to open its details, find the **"Assignees"** field, and select your name. Anyone with access to the repo can assign a card to themselves or to anyone else — there's no special permission needed, so feel free to grab a task from Backlog whenever you're ready to start something new.
+
+---
+
+## Common Issues
 
 - **"command not found" errors** — usually means the tool (git/python) isn't installed correctly, or isn't added to your system PATH. Reinstall and make sure any "add to PATH" option is checked.
 - **`(venv)` isn't showing in your terminal** — you forgot to activate the virtual environment (see Part 4, step 2). Run the activation command again.
