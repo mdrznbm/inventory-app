@@ -109,6 +109,19 @@ A few one-off scripts exist for managing test data during development. **Use wit
 
 Migration scripts only need to be run once against an existing database and are safe to re-run (they detect already-applied changes and skip them).
 
+## Deploying Your Own Copy (Optional)
+
+The official project deployment runs on the repo owner's Azure account. That's shared infrastructure for the team's presentation, not something every team member needs access to.
+
+If you'd like your own live, deployed version — for example, to have your own working demo link for a resume or portfolio — you're encouraged to deploy an independent copy of this same codebase to your own Azure account (Azure for Students works well and includes free credit). This is entirely separate from the official deployment and carries no risk to it:
+
+1. Clone or fork this repository as normal (see **Getting Started** above)
+2. Once Docker packaging is finalized in this project (see **Project Status** below), build the image and push it to your own Azure Container Registry
+3. Deploy your own Azure App Service (Web App for Containers) pointing at your own image
+4. You now have your own independent, fully working deployment — built and configured by you, with your own URL to share
+
+Detailed step-by-step Docker/Azure instructions will be added here once that work is complete in this project.
+
 ## Project Status
 
 - ✅ Core application features (staff management, security, inventory workflow, audit trail, UI)
