@@ -440,9 +440,14 @@
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-dark text-white fw-bold">
-        📊 Live Stock Overview
-        <span class="float-end fw-normal small text-white-50">Click a row to view full history</span>
+    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+        <span>📊 Live Stock Overview</span>
+        <span class="d-flex align-items-center gap-3">
+            <a href="{{ url_for('generate_stock_report') }}" class="btn btn-sm btn-outline-light">
+                📥 Generate Stock Report
+            </a>
+            <span class="fw-normal small text-white-50">Click a row to view full history</span>
+        </span>
     </div>
     <div class="card-body p-0">
         <table class="table table-striped table-hover mb-0">
