@@ -1,9 +1,12 @@
 import os
 import re
 from datetime import datetime
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
+from io import BytesIO
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
 from models import db, User, Product, Transaction
 
 app = Flask(__name__)
@@ -460,6 +463,93 @@ def supervisor_dashboard():
         next_ib_id=next_ib_id,
         next_ob_id=next_ob_id,
         next_s_id=next_s_id
+    )
+
+
+@app.route('/supervisor/report')
+@login_required
+def generate_stock_report():
+    if current_user.role != 'supervisor':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+
+    wb = Workbook()
+
+    # ---- Sheet 1: Stock Summary ----
+    summary = wb.active
+    summary.title = 'Stock Summary'
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='1F3864', end_color='1F3864', fill_type='solid')
+    low_stock_fill = PatternFill(start_color='F8CBAD', end_color='F8CBAD', fill_type='solid')
+
+    summary_headers = ['SKU', 'Product Name', 'Current Stock', 'Safety Threshold', 'Status']
+    summary.append(summary_headers)
+    for col_num, _ in enumerate(summary_headers, 1):
+        cell = summary.cell(row=1, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    products = Product.query.order_by(Product.sku).all()
+    for product in products:
+        is_low = product.current_stock < product.min_threshold
+        status = 'LOW STOCK' if is_low else 'OK'
+        row = [product.sku, product.name, product.current_stock, product.min_threshold, status]
+        summary.append(row)
+        if is_low:
+            row_num = summary.max_row
+            for col_num in range(1, 6):
+                summary.cell(row=row_num, column=col_num).fill = low_stock_fill
+
+    for col_num, header in enumerate(summary_headers, 1):
+        summary.column_dimensions[chr(64 + col_num)].width = max(len(header) + 4, 18)
+
+    # ---- Sheet 2: Full Audit Trail ----
+    audit = wb.create_sheet('Full Audit Trail')
+
+    audit_headers = ['Txn ID', 'Type', 'SKU', 'Product Name', 'Quantity', 'Status',
+                      'Requester', 'Actioned By', 'Created At', 'Approved At',
+                      'Rejected At', 'Rejection Reason']
+    audit.append(audit_headers)
+    for col_num, _ in enumerate(audit_headers, 1):
+        cell = audit.cell(row=1, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    transactions = Transaction.query.order_by(Transaction.created_at).all()
+    for txn in transactions:
+        requester_name = txn.requester_name_snapshot or (txn.requester.name if txn.requester else 'Unknown')
+        actioned_by_name = txn.actioned_by_name_snapshot or (txn.actioned_by.name if txn.actioned_by else '')
+        audit.append([
+            txn.id,
+            txn.txn_type,
+            txn.product.sku if txn.product else '',
+            txn.product.name if txn.product else '',
+            txn.quantity,
+            txn.status,
+            requester_name,
+            actioned_by_name,
+            txn.created_at.strftime('%Y-%m-%d %H:%M:%S') if txn.created_at else '',
+            txn.approved_at.strftime('%Y-%m-%d %H:%M:%S') if txn.approved_at else '',
+            txn.rejected_at.strftime('%Y-%m-%d %H:%M:%S') if txn.rejected_at else '',
+            txn.rejection_reason or '',
+        ])
+
+    for col_num, header in enumerate(audit_headers, 1):
+        audit.column_dimensions[chr(64 + col_num)].width = max(len(header) + 4, 16)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"stock_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
 
