@@ -208,13 +208,13 @@ def product_history_api(product_id):
 
         history_data.append({
             'staff_id': t.requester.staff_id.upper(),
-            'staff_name': t.requester.name,
+            'staff_name': t.requester_name_snapshot or t.requester.name,
             'quantity': t.quantity,
             'status': t.status,
             'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'actioned_at': actioned_at,
             'actioned_by_staff_id': t.actioned_by.staff_id.upper() if t.actioned_by else None,
-            'actioned_by_name': t.actioned_by.name if t.actioned_by else None,
+            'actioned_by_name': t.actioned_by_name_snapshot or (t.actioned_by.name if t.actioned_by else None),
             'rejection_reason': t.rejection_reason
         })
 
@@ -248,7 +248,7 @@ def product_full_history_api(product_id):
         history_data.append({
             'txn_type': t.txn_type,
             'staff_id': t.requester.staff_id.upper(),
-            'staff_name': t.requester.name,
+            'staff_name': t.requester_name_snapshot or t.requester.name,
             'quantity': t.quantity,
             'status': t.status,
             'date_time': t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else None,
@@ -257,7 +257,7 @@ def product_full_history_api(product_id):
             'rejected_at': t.rejected_at.strftime('%Y-%m-%d %H:%M:%S') if t.rejected_at else None,
             'actioned_at': actioned_at,
             'actioned_by_staff_id': t.actioned_by.staff_id.upper() if t.actioned_by else None,
-            'actioned_by_name': t.actioned_by.name if t.actioned_by else None,
+            'actioned_by_name': t.actioned_by_name_snapshot or (t.actioned_by.name if t.actioned_by else None),
             'rejection_reason': t.rejection_reason
         })
 
@@ -306,7 +306,8 @@ def submit_inbound_existing():
         quantity=quantity,
         status='PENDING',
         user_id=current_user.id,
-        product_id=product_id
+        product_id=product_id,
+        requester_name_snapshot=current_user.name
     )
     db.session.add(txn)
     db.session.commit()
@@ -348,7 +349,8 @@ def submit_inbound_new_batch():
                 quantity=qty,
                 status='PENDING',
                 user_id=current_user.id,
-                product_id=new_product.id
+                product_id=new_product.id,
+                requester_name_snapshot=current_user.name
             )
             db.session.add(txn)
             items_created += 1
@@ -409,7 +411,8 @@ def submit_outbound():
         quantity=quantity,
         status='PENDING',
         user_id=current_user.id,
-        product_id=product_id
+        product_id=product_id,
+        requester_name_snapshot=current_user.name
     )
     db.session.add(txn)
     db.session.commit()
@@ -613,6 +616,7 @@ def approve_transaction(txn_id):
         txn.status = 'APPROVED'
         txn.approved_at = datetime.utcnow()
         txn.actioned_by_user_id = current_user.id
+        txn.actioned_by_name_snapshot = current_user.name
         db.session.commit()
         flash(f'Transaction #{txn.id} approved! Inventory updated.', 'success')
 
@@ -633,6 +637,7 @@ def reject_transaction(txn_id):
         txn.rejection_reason = reason
         txn.rejected_at = datetime.utcnow()
         txn.actioned_by_user_id = current_user.id
+        txn.actioned_by_name_snapshot = current_user.name
         db.session.commit()
         flash(f'Transaction #{txn.id} was rejected.', 'info')
 

@@ -44,5 +44,7 @@ class Transaction(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     actioned_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     actioned_by = db.relationship('User', foreign_keys=[actioned_by_user_id])
+    requester_name_snapshot = db.Column(db.String(50), nullable=True)
+    actioned_by_name_snapshot = db.Column(db.String(50), nullable=True)
     def __repr__(self):
         return f"<Transaction #{self.id} {self.txn_type} - {self.status}>"

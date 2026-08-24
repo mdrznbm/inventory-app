@@ -109,7 +109,7 @@
                     </td>
                     <td>
                         {% if txn.actioned_by %}
-                            {{ txn.actioned_by.name }} ({{ txn.actioned_by.staff_id }})
+                            {{ txn.actioned_by_name_snapshot or txn.actioned_by.name }} ({{ txn.actioned_by.staff_id }})
                         {% else %}
                             -
                         {% endif %}
