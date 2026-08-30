@@ -11,6 +11,10 @@ from models import db, User, Product, Transaction
 
 app = Flask(__name__)
 
+@app.route('/health')
+def health():
+    return {"status": "ok"}, 200
+
 app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'inventory.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
