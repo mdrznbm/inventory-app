@@ -10,7 +10,7 @@ instance/*.db
 
 # Environment/secrets
 .env
-.env.*
+.env
 
 # IDE/editor files
 .vscode/
