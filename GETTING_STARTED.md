@@ -236,7 +236,9 @@ This project uses a `.env` file to store secret configuration (like the app's se
 
 1. Copy the example file to create your own:
  
-2. Open `.env` and fill in real values for each variable. 3. Never commit `.env` to GitHub — it's already excluded via `.gitignore`.
+2. Open `.env` and fill in real values for each variable. 
+
+3. Never commit `.env` to GitHub — it's already excluded via `.gitignore`.
 ---
 
 ## A Note on the Utility Scripts
