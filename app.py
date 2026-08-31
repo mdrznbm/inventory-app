@@ -1,5 +1,6 @@
 import os
 import re
+from dotenv import load_dotenv
 from datetime import datetime
 from io import BytesIO
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_file
@@ -9,13 +10,19 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from models import db, User, Product, Transaction
 
+load_dotenv(".env")
+
 app = Flask(__name__)
+
+
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 @app.route('/health')
 def health():
     return {"status": "ok"}, 200
 
-app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+#app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'inventory.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

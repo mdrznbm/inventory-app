@@ -230,6 +230,15 @@ We track project tasks using a GitHub Projects board (find it under the **Projec
 - **"No module named flask" or similar** — the virtual environment isn't activated, or `pip install -r requirements.txt` wasn't run. Check both.
 - **The app won't start / port already in use** — you may already have the app running in another terminal window. Close it first.
 
+## Environment Setup
+
+This project uses a `.env` file to store secret configuration (like the app's secret key) outside the code.
+
+1. Copy the example file to create your own:
+ 
+2. Open `.env` and fill in real values for each variable. 
+
+3. Never commit `.env` to GitHub — it's already excluded via `.gitignore`.
 ---
 
 ## A Note on the Utility Scripts
