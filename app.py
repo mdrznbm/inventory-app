@@ -14,16 +14,18 @@ load_dotenv(".env")
 
 app = Flask(__name__)
 
-
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
 @app.route('/health')
 def health():
     return {"status": "ok"}, 200
 
-#app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'inventory.db')
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'inventory.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 os.makedirs(app.instance_path, exist_ok=True)
