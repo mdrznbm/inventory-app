@@ -9,256 +9,509 @@
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-warning text-dark fw-bold">
-        ⏳ Pending Approval Queue ({{ pending_txns|length }})
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Type</th>
-                    <th>Requester</th>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th>Current Stock</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for txn in pending_txns %}
-                <tr>
-                    <td>
-                        {% if txn.txn_type == 'INBOUND' %}
-                            <span class="badge bg-success">INBOUND</span>
+<ul class="nav nav-tabs mb-4" id="supervisorTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="approvals-tab" data-bs-toggle="tab" data-bs-target="#approvals-pane" type="button" role="tab" aria-controls="approvals-pane" aria-selected="true">
+            ⏳ Approvals / Requests
+            {% set pending_total = pending_txns|length + locked_users|length %}
+            {% if pending_total > 0 %}
+                <span class="badge bg-danger ms-1">{{ pending_total }}</span>
+            {% endif %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="directory-tab" data-bs-toggle="tab" data-bs-target="#directory-pane" type="button" role="tab" aria-controls="directory-pane" aria-selected="false">
+            👥 Employee Directory
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock-pane" type="button" role="tab" aria-controls="stock-pane" aria-selected="false">
+            📊 Live Stock Overview
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="supervisorTabsContent">
+
+    <!-- ===================== TAB 1: APPROVALS / REQUESTS ===================== -->
+    <div class="tab-pane fade show active" id="approvals-pane" role="tabpanel" aria-labelledby="approvals-tab" tabindex="0">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-warning text-dark fw-bold">
+                ⏳ Pending Approval Queue ({{ pending_txns|length }})
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Type</th>
+                            <th>Requester</th>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Current Stock</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for txn in pending_txns %}
+                        <tr>
+                            <td>
+                                {% if txn.txn_type == 'INBOUND' %}
+                                    <span class="badge bg-success">INBOUND</span>
+                                {% else %}
+                                    <span class="badge bg-primary">OUTBOUND</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ txn.requester_name_snapshot or txn.requester.name }} (<code>{{ txn.requester.staff_id }}</code>)</td>
+                            <td><strong>{{ txn.product.name }}</strong> ({{ txn.product.sku }})</td>
+                            <td>
+                                {% if txn.txn_type == 'INBOUND' %}+{% else %}-{% endif %}{{ txn.quantity }}
+                            </td>
+                            <td>{{ txn.product.current_stock }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('approve_transaction', txn_id=txn.id) }}" class="btn btn-sm btn-success me-1">Approve</a>
+
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ txn.id }}">
+                                    Reject
+                                </button>
+
+                                <div class="modal fade text-start" id="rejectModal{{ txn.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="POST" action="{{ url_for('reject_transaction', txn_id=txn.id) }}">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title">Reject Request #{{ txn.id }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Are you sure you want to reject this request from <strong>{{ txn.requester_name_snapshot or txn.requester.name }}</strong>?</p>
+                                                    <div class="mb-3">
+                                                        <label for="rejection_reason" class="form-label">Reason for Rejection</label>
+                                                        <textarea class="form-control" name="rejection_reason" rows="3" required placeholder="e.g. Mismatched delivery count..."></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </td>
+                        </tr>
                         {% else %}
-                            <span class="badge bg-primary">OUTBOUND</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ txn.requester_name_snapshot or txn.requester.name }} (<code>{{ txn.requester.staff_id }}</code>)</td>
-                    <td><strong>{{ txn.product.name }}</strong> ({{ txn.product.sku }})</td>
-                    <td>
-                        {% if txn.txn_type == 'INBOUND' %}+{% else %}-{% endif %}{{ txn.quantity }}
-                    </td>
-                    <td>{{ txn.product.current_stock }}</td>
-                    <td class="text-end">
-                        <a href="{{ url_for('approve_transaction', txn_id=txn.id) }}" class="btn btn-sm btn-success me-1">Approve</a>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No pending requests at the moment.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ txn.id }}">
-                            Reject
-                        </button>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-danger text-white fw-bold">
+                🔒 Password Reset Requests ({{ locked_users|length }})
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Date &amp; Time of Lockout</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for locked_user in locked_users %}
+                        <tr>
+                            <td><code>{{ locked_user.staff_id }}</code></td>
+                            <td><strong>{{ locked_user.name }}</strong></td>
+                            <td>{{ locked_user.lock_requested_at.strftime('%Y-%m-%d %H:%M:%S') if locked_user.lock_requested_at else 'N/A' }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('reset_employee_password', user_id=locked_user.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Reset password for {{ locked_user.name }} ({{ locked_user.staff_id }}) back to the default password?');">
+                                    Reset Password
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No password reset requests at the moment.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                        <div class="modal fade text-start" id="rejectModal{{ txn.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="POST" action="{{ url_for('reject_transaction', txn_id=txn.id) }}">
-                                        <div class="modal-header bg-danger text-white">
-                                            <h5 class="modal-title">Reject Request #{{ txn.id }}</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to reject this request from <strong>{{ txn.requester_name_snapshot or txn.requester.name }}</strong>?</p>
-                                            <div class="mb-3">
-                                                <label for="rejection_reason" class="form-label">Reason for Rejection</label>
-                                                <textarea class="form-control" name="rejection_reason" rows="3" required placeholder="e.g. Mismatched delivery count..."></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <button type="submit" class="btn btn-danger">Confirm Rejection</button>
-                                        </div>
-                                    </form>
+    </div>
+    <!-- ===================== END TAB 1 ===================== -->
+
+    <!-- ===================== TAB 2: EMPLOYEE DIRECTORY ===================== -->
+    <div class="tab-pane fade" id="directory-pane" role="tabpanel" aria-labelledby="directory-tab" tabindex="0">
+
+        <div class="row">
+            <div class="col-md-5 mb-3 mb-md-0">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-middle register-employee-header">
+                        <span>👤 Register New Employee</span>
+                        <span class="badge bg-light text-dark">
+                            Inbound: {{ inbound_count }} | Outbound: {{ outbound_count }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('add_employee') }}">
+
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Department / Role</label>
+                                {% if forced_role == 'inbound_emp' %}
+                                    <select class="form-select bg-warning-subtle fw-bold" id="role" name="role" onchange="updateFormPreview()">
+                                        <option value="inbound_emp" selected>Inbound Department (Auto-Assigned - Lower Count)</option>
+                                        <option value="supervisor">Supervisor</option>
+                                    </select>
+                                    <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Inbound has fewer staff. Warehouse-floor hires are assigned to Inbound. Registering a Supervisor is always available.</div>
+                                {% elif forced_role == 'outbound_emp' %}
+                                    <select class="form-select bg-warning-subtle fw-bold" id="role" name="role" onchange="updateFormPreview()">
+                                        <option value="outbound_emp" selected>Outbound Department (Auto-Assigned - Lower Count)</option>
+                                        <option value="supervisor">Supervisor</option>
+                                    </select>
+                                    <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Outbound has fewer staff. Warehouse-floor hires are assigned to Outbound. Registering a Supervisor is always available.</div>
+                                {% else %}
+                                    <select class="form-select" id="role" name="role" required onchange="updateFormPreview()">
+                                        <option value="inbound_emp" selected>Inbound Department (Inbound)</option>
+                                        <option value="outbound_emp">Outbound Department (Outbound)</option>
+                                        <option value="supervisor">Supervisor</option>
+                                    </select>
+                                    <div class="form-text text-success fw-bold">⚖️ Equal Staffing: Supervisor can choose department.</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="staff_id_display" class="form-label">Staff ID (Auto-Assigned)</label>
+                                <input type="text" class="form-control bg-body-secondary text-muted fw-bold" id="staff_id_display" value="" readonly>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" required placeholder="e.g. Shah" oninput="updatePasswordPreview()">
+                                </div>
+                                <div class="col-6">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" required placeholder="e.g. Rahman">
                                 </div>
                             </div>
-                        </div>
 
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No pending requests at the moment.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                            <div class="mb-3">
+                                <label for="password_display" class="form-label">Initial Password (Auto-Generated)</label>
+                                <input type="text" class="form-control bg-body-secondary text-muted fw-bold" id="password_display" value="[firstname]123" readonly>
+                            </div>
 
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-danger text-white fw-bold">
-        🔒 Password Reset Requests ({{ locked_users|length }})
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Staff ID</th>
-                    <th>Name</th>
-                    <th>Date &amp; Time of Lockout</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for locked_user in locked_users %}
-                <tr>
-                    <td><code>{{ locked_user.staff_id }}</code></td>
-                    <td><strong>{{ locked_user.name }}</strong></td>
-                    <td>{{ locked_user.lock_requested_at.strftime('%Y-%m-%d %H:%M:%S') if locked_user.lock_requested_at else 'N/A' }}</td>
-                    <td class="text-end">
-                        <a href="{{ url_for('reset_employee_password', user_id=locked_user.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Reset password for {{ locked_user.name }} ({{ locked_user.staff_id }}) back to the default password?');">
-                            Reset Password
-                        </a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4">No password reset requests at the moment.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                            <button type="submit" class="btn btn-info text-white w-100 fw-bold register-employee-btn">Create Account</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
-<div class="row mb-4">
-    <div class="col-md-5 mb-3 mb-md-0">
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-secondary text-white fw-bold">
+                        🛡️ Supervisor
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0 staff-table">
+                            <colgroup>
+                                <col style="width: 15%;">
+                                <col style="width: 30%;">
+                                <col style="width: 20%;">
+                                <col style="width: 35%;">
+                            </colgroup>
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Staff ID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in employees if emp.role == 'supervisor' %}
+                                <tr>
+                                    <td><code>{{ emp.staff_id }}</code></td>
+                                    <td><strong>{{ emp.name }}</strong></td>
+                                    <td>
+                                        {% if emp.is_account_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Deactivated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
+                                            Edit
+                                        </button>
+                                        {% if emp.id != current_user.id %}
+                                            {% if emp.is_account_active %}
+                                            <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})?');">
+                                                Deactivate
+                                            </a>
+                                            {% else %}
+                                            <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
+                                                Reactivate
+                                            </a>
+                                            {% endif %}
+                                        {% endif %}
+
+                                        <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
+                                                        <div class="modal-header bg-secondary text-white">
+                                                            <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            {% set name_parts = emp.name.split(' ', 1) %}
+                                                            <div class="mb-3">
+                                                                <label class="form-label">First Name</label>
+                                                                <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Last Name</label>
+                                                                <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-success text-white fw-bold">
+                        📥 Inbound Department
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0 staff-table">
+                            <colgroup>
+                                <col style="width: 15%;">
+                                <col style="width: 30%;">
+                                <col style="width: 20%;">
+                                <col style="width: 35%;">
+                            </colgroup>
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Staff ID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in employees if emp.role == 'inbound_emp' %}
+                                <tr>
+                                    <td><code>{{ emp.staff_id }}</code></td>
+                                    <td><strong>{{ emp.name }}</strong></td>
+                                    <td>
+                                        {% if emp.is_account_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Deactivated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
+                                            Edit
+                                        </button>
+                                        {% if emp.is_account_active %}
+                                        <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
+                                            Deactivate
+                                        </a>
+                                        {% else %}
+                                        <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
+                                            Reactivate
+                                        </a>
+                                        {% endif %}
+
+                                        <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
+                                                        <div class="modal-header bg-secondary text-white">
+                                                            <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            {% set name_parts = emp.name.split(' ', 1) %}
+                                                            <div class="mb-3">
+                                                                <label class="form-label">First Name</label>
+                                                                <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Last Name</label>
+                                                                <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No inbound staff yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white fw-bold">
+                        📤 Outbound Department
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0 staff-table">
+                            <colgroup>
+                                <col style="width: 15%;">
+                                <col style="width: 30%;">
+                                <col style="width: 20%;">
+                                <col style="width: 35%;">
+                            </colgroup>
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Staff ID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in employees if emp.role == 'outbound_emp' %}
+                                <tr>
+                                    <td><code>{{ emp.staff_id }}</code></td>
+                                    <td><strong>{{ emp.name }}</strong></td>
+                                    <td>
+                                        {% if emp.is_account_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Deactivated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
+                                            Edit
+                                        </button>
+                                        {% if emp.is_account_active %}
+                                        <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
+                                            Deactivate
+                                        </a>
+                                        {% else %}
+                                        <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
+                                            Reactivate
+                                        </a>
+                                        {% endif %}
+
+                                        <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
+                                                        <div class="modal-header bg-secondary text-white">
+                                                            <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            {% set name_parts = emp.name.split(' ', 1) %}
+                                                            <div class="mb-3">
+                                                                <label class="form-label">First Name</label>
+                                                                <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Last Name</label>
+                                                                <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No outbound staff yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- ===================== END TAB 2 ===================== -->
+
+    <!-- ===================== TAB 3: LIVE STOCK OVERVIEW ===================== -->
+    <div class="tab-pane fade" id="stock-pane" role="tabpanel" aria-labelledby="stock-tab" tabindex="0">
+
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-middle register-employee-header">
-                <span>👤 Register New Employee</span>
-                <span class="badge bg-light text-dark">
-                    Inbound: {{ inbound_count }} | Outbound: {{ outbound_count }}
+            <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                <span>📊 Live Stock Overview</span>
+                <span class="d-flex align-items-center gap-3">
+                    <a href="{{ url_for('generate_stock_report') }}" class="btn btn-sm btn-outline-light">
+                        📥 Generate Stock Report
+                    </a>
+                    <span class="fw-normal small text-white-50">Click a row to view full history</span>
                 </span>
             </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('add_employee') }}">
-
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Department / Role</label>
-                        {% if forced_role == 'inbound_emp' %}
-                            <select class="form-select bg-warning-subtle fw-bold" id="role" name="role" onchange="updateFormPreview()">
-                                <option value="inbound_emp" selected>Inbound Department (Auto-Assigned - Lower Count)</option>
-                                <option value="supervisor">Supervisor</option>
-                            </select>
-                            <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Inbound has fewer staff. Warehouse-floor hires are assigned to Inbound. Registering a Supervisor is always available.</div>
-                        {% elif forced_role == 'outbound_emp' %}
-                            <select class="form-select bg-warning-subtle fw-bold" id="role" name="role" onchange="updateFormPreview()">
-                                <option value="outbound_emp" selected>Outbound Department (Auto-Assigned - Lower Count)</option>
-                                <option value="supervisor">Supervisor</option>
-                            </select>
-                            <div class="form-text text-danger fw-bold">⚙️ Auto-Balancing: Outbound has fewer staff. Warehouse-floor hires are assigned to Outbound. Registering a Supervisor is always available.</div>
-                        {% else %}
-                            <select class="form-select" id="role" name="role" required onchange="updateFormPreview()">
-                                <option value="inbound_emp" selected>Inbound Department (Inbound)</option>
-                                <option value="outbound_emp">Outbound Department (Outbound)</option>
-                                <option value="supervisor">Supervisor</option>
-                            </select>
-                            <div class="form-text text-success fw-bold">⚖️ Equal Staffing: Supervisor can choose department.</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="staff_id_display" class="form-label">Staff ID (Auto-Assigned)</label>
-                        <input type="text" class="form-control bg-body-secondary text-muted fw-bold" id="staff_id_display" value="" readonly>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label for="first_name" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" required placeholder="e.g. Shah" oninput="updatePasswordPreview()">
-                        </div>
-                        <div class="col-6">
-                            <label for="last_name" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" required placeholder="e.g. Rahman">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="password_display" class="form-label">Initial Password (Auto-Generated)</label>
-                        <input type="text" class="form-control bg-body-secondary text-muted fw-bold" id="password_display" value="[firstname]123" readonly>
-                    </div>
-
-                    <button type="submit" class="btn btn-info text-white w-100 fw-bold register-employee-btn">Create Account</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-7">
-        <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-secondary text-white fw-bold">
-                🛡️ Supervisor
-            </div>
             <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0 staff-table">
-                    <colgroup>
-                        <col style="width: 15%;">
-                        <col style="width: 30%;">
-                        <col style="width: 20%;">
-                        <col style="width: 35%;">
-                    </colgroup>
-                    <thead class="table-light">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
                         <tr>
-                            <th>Staff ID</th>
-                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Product Name</th>
+                            <th>Current Stock</th>
+                            <th>Safety Threshold</th>
                             <th>Status</th>
-                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for emp in employees if emp.role == 'supervisor' %}
-                        <tr>
-                            <td><code>{{ emp.staff_id }}</code></td>
-                            <td><strong>{{ emp.name }}</strong></td>
+                        {% for prod in products %}
+                        <tr style="cursor: pointer;" onclick="showProductHistory({{ prod.id }}, '{{ prod.name }} ({{ prod.sku }})')">
+                            <td><code>{{ prod.sku }}</code></td>
+                            <td>{{ prod.name }}</td>
+                            <td><strong>{{ prod.current_stock }}</strong></td>
+                            <td>{{ prod.min_threshold }}</td>
                             <td>
-                                {% if emp.is_account_active %}
-                                    <span class="badge bg-success">Active</span>
+                                {% if prod.current_stock <= prod.min_threshold %}
+                                    <span class="badge bg-danger">Low Stock Alert</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Deactivated</span>
+                                    <span class="badge bg-success">Optimal</span>
                                 {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
-                                    Edit
-                                </button>
-                                {% if emp.id != current_user.id %}
-                                    {% if emp.is_account_active %}
-                                    <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})?');">
-                                        Deactivate
-                                    </a>
-                                    {% else %}
-                                    <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
-                                        Reactivate
-                                    </a>
-                                    {% endif %}
-                                {% endif %}
-
-                                <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
-                                                <div class="modal-header bg-secondary text-white">
-                                                    <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    {% set name_parts = emp.name.split(' ', 1) %}
-                                                    <div class="mb-3">
-                                                        <label class="form-label">First Name</label>
-                                                        <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Last Name</label>
-                                                        <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -267,218 +520,9 @@
             </div>
         </div>
 
-        <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-success text-white fw-bold">
-                📥 Inbound Department
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0 staff-table">
-                    <colgroup>
-                        <col style="width: 15%;">
-                        <col style="width: 30%;">
-                        <col style="width: 20%;">
-                        <col style="width: 35%;">
-                    </colgroup>
-                    <thead class="table-light">
-                        <tr>
-                            <th>Staff ID</th>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for emp in employees if emp.role == 'inbound_emp' %}
-                        <tr>
-                            <td><code>{{ emp.staff_id }}</code></td>
-                            <td><strong>{{ emp.name }}</strong></td>
-                            <td>
-                                {% if emp.is_account_active %}
-                                    <span class="badge bg-success">Active</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Deactivated</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
-                                    Edit
-                                </button>
-                                {% if emp.is_account_active %}
-                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
-                                    Deactivate
-                                </a>
-                                {% else %}
-                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
-                                    Reactivate
-                                </a>
-                                {% endif %}
-
-                                <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
-                                                <div class="modal-header bg-secondary text-white">
-                                                    <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    {% set name_parts = emp.name.split(' ', 1) %}
-                                                    <div class="mb-3">
-                                                        <label class="form-label">First Name</label>
-                                                        <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Last Name</label>
-                                                        <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted py-3">No inbound staff yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-primary text-white fw-bold">
-                📤 Outbound Department
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0 staff-table">
-                    <colgroup>
-                        <col style="width: 15%;">
-                        <col style="width: 30%;">
-                        <col style="width: 20%;">
-                        <col style="width: 35%;">
-                    </colgroup>
-                    <thead class="table-light">
-                        <tr>
-                            <th>Staff ID</th>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for emp in employees if emp.role == 'outbound_emp' %}
-                        <tr>
-                            <td><code>{{ emp.staff_id }}</code></td>
-                            <td><strong>{{ emp.name }}</strong></td>
-                            <td>
-                                {% if emp.is_account_active %}
-                                    <span class="badge bg-success">Active</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Deactivated</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ emp.id }}">
-                                    Edit
-                                </button>
-                                {% if emp.is_account_active %}
-                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate account for {{ emp.name }} ({{ emp.staff_id }})? This will unassign {{ emp.staff_id }} so it can be recycled for new hires.');">
-                                    Deactivate
-                                </a>
-                                {% else %}
-                                <a href="{{ url_for('toggle_employee_status', user_id=emp.id) }}" class="btn btn-sm btn-outline-success">
-                                    Reactivate
-                                </a>
-                                {% endif %}
-
-                                <div class="modal fade text-start" id="editModal{{ emp.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form method="POST" action="{{ url_for('edit_employee', user_id=emp.id) }}">
-                                                <div class="modal-header bg-secondary text-white">
-                                                    <h5 class="modal-title">Edit Name — {{ emp.staff_id }}</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    {% set name_parts = emp.name.split(' ', 1) %}
-                                                    <div class="mb-3">
-                                                        <label class="form-label">First Name</label>
-                                                        <input type="text" class="form-control" name="edit_first_name" value="{{ name_parts[0] }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Last Name</label>
-                                                        <input type="text" class="form-control" name="edit_last_name" value="{{ name_parts[1] if name_parts|length > 1 else '' }}">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted py-3">No outbound staff yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
-</div>
+    <!-- ===================== END TAB 3 ===================== -->
 
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
-        <span>📊 Live Stock Overview</span>
-        <span class="d-flex align-items-center gap-3">
-            <a href="{{ url_for('generate_stock_report') }}" class="btn btn-sm btn-outline-light">
-                📥 Generate Stock Report
-            </a>
-            <span class="fw-normal small text-white-50">Click a row to view full history</span>
-        </span>
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-striped table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Product Name</th>
-                    <th>Current Stock</th>
-                    <th>Safety Threshold</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for prod in products %}
-                <tr style="cursor: pointer;" onclick="showProductHistory({{ prod.id }}, '{{ prod.name }} ({{ prod.sku }})')">
-                    <td><code>{{ prod.sku }}</code></td>
-                    <td>{{ prod.name }}</td>
-                    <td><strong>{{ prod.current_stock }}</strong></td>
-                    <td>{{ prod.min_threshold }}</td>
-                    <td>
-                        {% if prod.current_stock <= prod.min_threshold %}
-                            <span class="badge bg-danger">Low Stock Alert</span>
-                        {% else %}
-                            <span class="badge bg-success">Optimal</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
 </div>
 
 <div class="modal fade" id="productHistoryModal" tabindex="-1" aria-hidden="true">
