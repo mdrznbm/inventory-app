@@ -1,9 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Login - Inventory Portal{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-5">
-        <div class="card shadow-sm border-0">
+<style>
+    .login-hero {
+        min-height: 65vh;
+    }
+    .login-logo {
+        max-width: 320px;
+        width: 80%;
+        height: auto;
+        border: 3px solid #000000;
+        border-radius: 6px;
+    }
+    .logo-white {
+        display: none;
+    }
+    html[data-bs-theme="dark"] .logo-navy {
+        display: none;
+    }
+    html[data-bs-theme="dark"] .logo-white {
+        display: block;
+    }
+    html[data-bs-theme="dark"] .login-logo {
+        border-color: #ffffff;
+    }
+    .login-card {
+        border: 3px solid #000000;
+    }
+    html[data-bs-theme="dark"] .login-card {
+        border-color: #ffffff;
+    }
+</style>
+
+<div class="row login-hero align-items-center justify-content-between mt-4 gy-4">
+    <div class="col-12 col-md-6 d-none d-md-flex justify-content-center">
+        <img src="{{ url_for('static', filename='img/logo-navy.png') }}" alt="HJR Inventory Solutions" class="login-logo logo-navy">
+        <img src="{{ url_for('static', filename='img/logo-white.png') }}" alt="HJR Inventory Solutions" class="login-logo logo-white">
+    </div>
+    <div class="col-12 col-md-5">
+        <div class="card shadow-sm login-card">
             <div class="card-header bg-primary text-white text-center py-3">
                 <h4 class="mb-0 fw-bold">Portal Login</h4>
             </div>
