@@ -24,4 +24,5 @@ COPY static/ static/
 EXPOSE 5001
 
 # Run with gunicorn (production WSGI server), not the Flask dev server
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:5001", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "4", "app:app"]
